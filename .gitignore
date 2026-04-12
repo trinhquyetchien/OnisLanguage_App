@@ -1,0 +1,42 @@
+# Android built-in ignores
+build/
+.gradle/
+local.properties
+.navigation/
+captures/
+
+# Security and secrets
+.env
+.env.*
+
+# Android Studio (IntelliJ) ignores
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# User-specific
+.DS_Store
+Thumbs.db
+*.swp
+
+# Memory dumps
+*.hprof
+
+# Generated APKs/AARs
+*.apk
+*.aar
+
+# Gradle specific
+.gradle-cache/
+gradle-app.setting
+!gradle-wrapper.jar
+
+# Log files
+*.log
+
+# Temp files
+*.tmp
+*.bak
+*~
