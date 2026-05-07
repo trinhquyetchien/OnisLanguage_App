@@ -14,8 +14,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -28,72 +28,78 @@ import com.onislanguage.app.ui.screens.*
 fun AppLayout() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route ?: Screen.Welcome.route
+    val currentRoute = navBackStackEntry?.destination?.route ?: Screen.Dashboard.route
+    
+    var isDarkTheme by remember { mutableStateOf(false) }
 
-    val showBottomNav = currentRoute !in listOf(
-        Screen.Welcome.route,
-        Screen.Quiz.route,
-        Screen.Chat.route
-    )
+    OnisLanguageTheme(darkTheme = isDarkTheme) {
+        val showBottomNav = currentRoute in mainRoutes
 
-    Scaffold(
-        bottomBar = {
-            if (showBottomNav) {
-                BottomNavigationBar(
-                    currentRoute = currentRoute,
-                    onNavigate = { route ->
-                        navController.navigate(route) {
-                            popUpTo(Screen.Dashboard.route) {
-                                saveState = true
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
+            bottomBar = {
+                if (showBottomNav) {
+                    BottomNavigationBar(
+                        currentRoute = currentRoute,
+                        onNavigate = { route ->
+                            navController.navigate(route) {
+                                popUpTo(Screen.Dashboard.route) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                            launchSingleTop = true
-                            restoreState = true
                         }
-                    }
-                )
+                    )
+                }
             }
-        }
-    ) { paddingValues ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Welcome.route,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            composable(Screen.Welcome.route) {
-                WelcomeScreen(onNavigate = { navController.navigate(it) })
-            }
-            composable(Screen.Dashboard.route) {
-                DashboardScreen(onNavigate = { navController.navigate(it) })
-            }
-            composable(Screen.Import.route) {
-                ImportScreen(onNavigate = { navController.navigate(it) })
-            }
-            composable(Screen.Analysis.route) {
-                AnalysisScreen(onNavigate = { navController.navigate(it) })
-            }
-            composable(Screen.Vocabulary.route) {
-                VocabularyScreen(onNavigate = { navController.navigate(it) })
-            }
-            composable(Screen.Grammar.route) {
-                GrammarScreen(onNavigate = { navController.navigate(it) })
-            }
-            composable(Screen.Chat.route) {
-                ChatScreen(onNavigate = { navController.navigate(it) })
-            }
-            composable(Screen.Quiz.route) {
-                QuizScreen(onNavigate = { navController.navigate(it) })
-            }
-            composable(Screen.History.route) {
-                HistoryScreen(onNavigate = { navController.navigate(it) })
-            }
-            composable(Screen.Profile.route) {
-                ProfileScreen(onNavigate = { navController.navigate(it) })
+        ) { paddingValues ->
+            NavHost(
+                navController = navController,
+                startDestination = Screen.Dashboard.route,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                composable(Screen.Welcome.route) {
+                    WelcomeScreen(onNavigate = { navController.navigate(it) })
+                }
+                composable(Screen.Dashboard.route) {
+                    JapaneseHomeScreen(onNavigate = { navController.navigate(it) })
+                }
+                composable(Screen.AudioToText.route) {
+                    AudioToTextScreen()
+                }
+                composable(Screen.ImageAnalysis.route) {
+                    ImageAnalysisScreen()
+                }
+                composable(Screen.Kanji.route) {
+                    KanjiScreen()
+                }
+                composable(Screen.Flashcard.route) {
+                    FlashcardScreen()
+                }
+                composable(Screen.Settings.route) {
+                    SettingsScreen(
+                        isDarkTheme = isDarkTheme,
+                        onThemeChange = { isDarkTheme = it },
+                        onLogout = { /* Xử lý logout mock */ }
+                    )
+                }
+                // ... rest of composables
             }
         }
     }
 }
+
+private val mainRoutes = listOf(
+    Screen.Dashboard.route,
+    Screen.AudioToText.route,
+    Screen.ImageAnalysis.route,
+    Screen.Kanji.route,
+    Screen.Flashcard.route,
+    Screen.Settings.route
+)
 
 @Composable
 fun BottomNavigationBar(
@@ -101,36 +107,35 @@ fun BottomNavigationBar(
     onNavigate: (String) -> Unit
 ) {
     val navItems = listOf(
-        NavItem(Screen.Dashboard.route, "Home", Icons.Filled.Home),
-        NavItem(Screen.Import.route, "Learn", Icons.Filled.School),
-        NavItem(Screen.History.route, "History", Icons.Filled.History),
-        NavItem(Screen.Chat.route, "AI Chat", Icons.Filled.SmartToy),
-        NavItem(Screen.Profile.route, "Profile", Icons.Filled.Person)
+        NavItem(Screen.Dashboard.route, "Khám phá", Icons.Filled.Explore),
+        NavItem(Screen.AudioToText.route, "Âm thanh", Icons.Filled.GraphicEq),
+        NavItem(Screen.Kanji.route, "Luyện viết", Icons.Default.Create),
+        NavItem(Screen.Flashcard.route, "Thẻ học", Icons.Default.Style),
+        NavItem(Screen.Settings.route, "Cài đặt", Icons.Default.Settings)
     )
 
-    Box(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(
-                elevation = 40.dp,
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-                spotColor = Color(0xFF2D2E36).copy(alpha = 0.06f)
+                elevation = 16.dp,
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
             )
-            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-            .background(Color.White.copy(alpha = 0.9f))
-            .windowInsetsPadding(WindowInsets.navigationBars)
-        ) {
+            .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)),
+        color = Color.White
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(horizontal = 12.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
             navItems.forEach { item ->
                 val isSelected = currentRoute == item.route
                 val contentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f) else Color.Transparent
+                val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f) else Color.Transparent
 
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -144,17 +149,17 @@ fun BottomNavigationBar(
                         imageVector = item.icon,
                         contentDescription = item.label,
                         tint = contentColor,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = item.label.uppercase(),
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 10.sp,
-                            letterSpacing = 1.sp,
-                            color = contentColor
+                    if (isSelected) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = item.label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = contentColor,
+                            fontWeight = FontWeight.Bold
                         )
-                    )
+                    }
                 }
             }
         }

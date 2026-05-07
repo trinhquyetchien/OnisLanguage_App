@@ -15,6 +15,32 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
+val DarkColorScheme = darkColorScheme(
+    primary = Color(0xFF9ECAFF),
+    onPrimary = Color(0xFF003258),
+    primaryContainer = Color(0xFF00497D),
+    onPrimaryContainer = Color(0xFFD1E4FF),
+    secondary = Color(0xFFBBC7DB),
+    onSecondary = Color(0xFF253140),
+    secondaryContainer = Color(0xFF3B4858),
+    onSecondaryContainer = Color(0xFFD7E3F7),
+    tertiary = Color(0xFFD6BEE4),
+    onTertiary = Color(0xFF3B2948),
+    tertiaryContainer = Color(0xFF523F5F),
+    onTertiaryContainer = Color(0xFFF2DAFF),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
+    background = Color(0xFF1A1C1E),
+    onBackground = Color(0xFFE2E2E6),
+    surface = Color(0xFF1A1C1E),
+    onSurface = Color(0xFFE2E2E6),
+    surfaceVariant = Color(0xFF43474E),
+    onSurfaceVariant = Color(0xFFC3C7CF),
+    outline = Color(0xFF8D9199)
+)
+
 private val LightColorScheme = lightColorScheme(
     primary = Primary,
     onPrimary = OnPrimary,
@@ -34,12 +60,11 @@ private val LightColorScheme = lightColorScheme(
     onErrorContainer = OnErrorContainer,
     surface = Surface,
     onSurface = OnSurface,
-    surfaceVariant = SurfaceContainerHighest,
+    surfaceVariant = SurfaceVariant,
     onSurfaceVariant = OnSurfaceVariant,
     outline = Outline,
-    outlineVariant = OutlineVariant,
-    background = Surface,
-    onBackground = OnSurface
+    background = Background,
+    onBackground = OnBackground
 )
 
 @Composable
@@ -47,7 +72,7 @@ fun OnisLanguageTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = LightColorScheme
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     val view = LocalView.current
     if (!view.isInEditMode) {
