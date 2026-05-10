@@ -10,9 +10,12 @@ import androidx.compose.ui.Modifier
 import com.onislanguage.app.ui.theme.OnisLanguageTheme
 import com.onislanguage.app.ui.layout.AppLayout
 
+import com.onislanguage.app.di.ServiceLocator
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ServiceLocator.init(this)
         setContent {
             AppLayout()
         }

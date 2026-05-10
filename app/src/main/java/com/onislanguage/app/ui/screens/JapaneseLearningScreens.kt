@@ -8,6 +8,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -445,114 +449,166 @@ fun KanjiScreen() {
 }
 
 @Composable
-fun FlashcardScreen() {
+fun FlashcardScreen(onNavigate: (String) -> Unit = {}) {
+    var selectedTab by remember { mutableStateOf(0) } // 0: My Decks, 1: Server
+    var isCreatingDeck by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .padding(20.dp)
-            .verticalScroll(rememberScrollState())
     ) {
-        HeaderSection("Flashcards", "Ôn tập từ vựng một cách hiệu quả")
+        HeaderSection("Flashcards", "Hệ thống thẻ nhớ thông minh")
         
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        // Flashcard Card
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(380.dp)
-                .padding(bottom = 24.dp),
-            contentAlignment = Alignment.Center
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Tab Selector
+        TabRow(
+            selectedTabIndex = selectedTab,
+            containerColor = Color.Transparent,
+            divider = {},
+            indicator = { tabPositions ->
+                TabRowDefaults.SecondaryIndicator(
+                    Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         ) {
-            // Background stack decoration
-            Surface(
-                modifier = Modifier.fillMaxWidth(0.85f).height(320.dp).offset(y = 20.dp),
-                shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-            ) {}
-            
-            // Main Card
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth(0.95f)
-                    .height(320.dp),
-                shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.primary,
-                shadowElevation = 8.dp
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        "勉強",
-                        style = MaterialTheme.typography.displayLarge,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        "Benkyou",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = Color.White.copy(alpha = 0.8f)
-                    )
-                    Spacer(modifier = Modifier.height(40.dp))
-                    Text(
-                        "Chạm để xem nghĩa",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.6f)
-                    )
-                }
+            Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
+                Text("Bộ của tôi", modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold)
+            }
+            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
+                Text("Từ Server", modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold)
             }
         }
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Thẻ số 12 / 45", fontWeight = FontWeight.SemiBold)
-        }
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-            Surface(
-                modifier = Modifier.size(64.dp).clickable { },
-                shape = CircleShape,
-                color = Color(0xFFFFEBEE),
-                border = BorderStroke(1.dp, Color(0xFFFFCDD2))
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Close, contentDescription = null, tint = Color.Red)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (selectedTab == 0) {
+            // My Decks View
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column {
+                    Button(
+                        onClick = { isCreatingDeck = true },
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Tạo bộ thẻ mới", fontWeight = FontWeight.Bold)
+                    }
+                    
+                    Spacer(modifier = Modifier.height(20.dp))
+                    
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(listOf("Từ vựng N3 - Bài 1", "Kanji hay quên", "Giao tiếp căn bản")) { deckName ->
+                            DeckCard(
+                                title = deckName,
+                                cardCount = 45,
+                                onLearn = { /* Start Learning */ },
+                                onEdit = { /* Edit Deck */ }
+                            )
+                        }
+                    }
                 }
             }
-            
-            Button(
-                onClick = { },
-                modifier = Modifier.weight(1f).height(64.dp),
-                shape = RoundedCornerShape(32.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text("Tiếp theo", style = MaterialTheme.typography.titleMedium)
-            }
-            
-            Surface(
-                modifier = Modifier.size(64.dp).clickable { },
-                shape = CircleShape,
-                color = Color(0xFFE8F5E9),
-                border = BorderStroke(1.dp, Color(0xFFC8E6C9))
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Check, contentDescription = null, tint = Color(0xFF2E7D32))
+        } else {
+            // Server Decks View
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(listOf("Tổng hợp N5 (200 cards)", "Từ vựng chuyên ngành IT", "1000 từ phổ thông")) { serverDeck ->
+                    ServerDeckCard(
+                        title = serverDeck,
+                        onDownload = { /* Download from server */ }
+                    )
                 }
             }
         }
     }
+
+    if (isCreatingDeck) {
+        AlertDialog(
+            onDismissRequest = { isCreatingDeck = false },
+            confirmButton = {
+                TextButton(onClick = { isCreatingDeck = false }) { Text("Tạo") }
+            },
+            dismissButton = {
+                TextButton(onClick = { isCreatingDeck = false }) { Text("Hủy") }
+            },
+            title = { Text("Tạo bộ thẻ mới") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(value = "", onValueChange = {}, label = { Text("Tên bộ thẻ") })
+                    OutlinedTextField(value = "", onValueChange = {}, label = { Text("Mô tả") })
+                }
+            }
+        )
+    }
 }
+
+@Composable
+fun DeckCard(title: String, cardCount: Int, onLearn: () -> Unit, onEdit: () -> Unit) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = Color.White)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    modifier = Modifier.size(52.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Style, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                    }
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("$cardCount thẻ", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onLearn,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Bắt đầu học")
+            }
+        }
+    }
+}
+
+@Composable
+fun ServerDeckCard(title: String, onDownload: () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, fontWeight = FontWeight.Bold)
+                Text("Chia sẻ bởi cộng đồng", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            IconButton(onClick = onDownload) {
+                Icon(Icons.Default.DownloadForOffline, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            }
+        }
+    }
+}
+
 
 // Reusable Components
 @Composable

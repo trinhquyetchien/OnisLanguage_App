@@ -19,15 +19,34 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.onislanguage.app.R
+import com.onislanguage.app.di.ServiceLocator
+import com.onislanguage.app.ui.viewmodel.AuthViewModel
 
 @Composable
-fun ProfileScreen(onNavigate: (String) -> Unit) {
-    var notifications by remember { mutableStateOf(true) }
-    var darkMode by remember { mutableStateOf(false) }
-    var offlineMode by remember { mutableStateOf(true) }
+fun ProfileScreen(
+    onNavigate: (String) -> Unit,
+    viewModel: AuthViewModel = viewModel(factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+            return ServiceLocator.provideAuthViewModel() as T
+        }
+    })
+) {
+    val authState by viewModel.authState.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+    
+    var isEditing by remember { mutableStateOf(false) }
+    var editName by remember { mutableStateOf(authState?.user?.display_name ?: "") }
+    var editEmail by remember { mutableStateOf(authState?.user?.email ?: "") }
+    var showOtpDialog by remember { mutableStateOf(false) }
+    var otp by remember { mutableStateOf("") }
+
     val scrollState = rememberScrollState()
 
     Column(
@@ -39,10 +58,7 @@ fun ProfileScreen(onNavigate: (String) -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Profile Header
-        Box(
-            modifier = Modifier
-                .size(128.dp)
-        ) {
+        Box(modifier = Modifier.size(128.dp)) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -51,7 +67,7 @@ fun ProfileScreen(onNavigate: (String) -> Unit) {
                     .border(4.dp, Color.White, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text("AL", fontSize = 36.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(authState?.user?.display_name?.take(2)?.uppercase() ?: "??", fontSize = 36.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
             Box(
                 modifier = Modifier
@@ -59,83 +75,102 @@ fun ProfileScreen(onNavigate: (String) -> Unit) {
                     .shadow(10.dp, CircleShape, spotColor = Color.Black.copy(alpha = 0.1f))
                     .background(Color.White, CircleShape)
                     .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f), CircleShape)
+                    .clickable { isEditing = !isEditing }
                     .padding(8.dp)
             ) {
-                Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                Icon(if (isEditing) Icons.Default.Close else Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
             }
         }
+        
         Spacer(modifier = Modifier.height(24.dp))
-        Text("Alex Learner", fontSize = 24.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text("alex@example.com", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(
-            modifier = Modifier
-                .background(Color(0xFFFFF3E0), RoundedCornerShape(100.dp))
-                .border(1.dp, Color(0xFFFFE0B2), RoundedCornerShape(100.dp))
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFB8C00), modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("ONIS PRO", fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = Color(0xFFFB8C00))
-        }
-        Spacer(modifier = Modifier.height(32.dp))
 
-        // Learning Preferences
-        SectionHeader("LEARNING PREFERENCES")
-        SettingsCard {
-            PreferenceRow(icon = Icons.Default.Language, label = "Target Language", value = "Japanese \uD83C\uDDEF\uD83C\uDDF5")
-            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f))
-            PreferenceRow(icon = Icons.Default.Public, label = "Native Language", value = "English \uD83C\uDDFA\uD83C\uDDF8")
-            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f))
-            PreferenceRow(icon = Icons.Default.AccessTime, label = "Daily Goal", value = "20 minutes / day")
+        if (isEditing) {
+            OutlinedTextField(
+                value = editName,
+                onValueChange = { editName = it },
+                label = { Text(stringResource(R.string.display_name)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = editEmail,
+                onValueChange = { editEmail = it },
+                label = { Text(stringResource(R.string.email)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(16.dp))
+            Button(
+                onClick = {
+                    viewModel.updateProfile(
+                        displayName = editName,
+                        email = if (editEmail != authState?.user?.email) editEmail else null,
+                        onOtpRequired = { showOtpDialog = true },
+                        onSuccess = { isEditing = false }
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading
+            ) {
+                if (isLoading) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White)
+                else Text(stringResource(R.string.save))
+            }
+        } else {
+            Text(authState?.user?.display_name ?: "Onis Learner", fontSize = 24.sp, fontWeight = FontWeight.Black)
+            Text(authState?.user?.email ?: "guest@onis.app", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+
         Spacer(modifier = Modifier.height(32.dp))
 
         // App Settings
         SectionHeader("APP SETTINGS")
         SettingsCard {
-            SettingsRow(icon = Icons.Default.Notifications, label = "Notifications", type = "toggle", checked = notifications, onChanged = { notifications = it }, iconBg = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), iconColor = MaterialTheme.colorScheme.primary)
-            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f))
-            SettingsRow(icon = Icons.Default.DarkMode, label = "Dark Mode", type = "toggle", checked = darkMode, onChanged = { darkMode = it }, iconBg = MaterialTheme.colorScheme.surfaceVariant, iconColor = MaterialTheme.colorScheme.onSurfaceVariant)
-            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f))
-            SettingsRow(icon = Icons.Default.CloudDownload, label = "Offline Mode", type = "toggle", checked = offlineMode, onChanged = { offlineMode = it }, iconBg = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), iconColor = MaterialTheme.colorScheme.primary)
-            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f))
-            SettingsRow(icon = Icons.Default.CreditCard, label = "Pro Plan (Active)", type = "link", iconBg = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f), iconColor = MaterialTheme.colorScheme.tertiary)
-        }
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Support
-        SettingsCard {
-            SettingsRow(icon = Icons.Default.Help, label = "Help Center", type = "link", iconColor = MaterialTheme.colorScheme.onSurfaceVariant)
-            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f))
-            SettingsRow(icon = Icons.Default.Security, label = "Privacy Policy", type = "link", iconColor = MaterialTheme.colorScheme.onSurfaceVariant)
-            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f))
+            SettingsRow(icon = Icons.Default.Translate, label = stringResource(R.string.language), type = "link", iconColor = MaterialTheme.colorScheme.primary, onClick = { onNavigate(com.onislanguage.app.navigation.Screen.Settings.route) })
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f))
             SettingsRow(
-                icon = Icons.Default.ExitToApp, 
-                label = "Log Out", 
+                icon = Icons.Default.Logout, 
+                label = stringResource(R.string.logout), 
                 type = "button", 
                 iconColor = MaterialTheme.colorScheme.error, 
                 textColor = MaterialTheme.colorScheme.error,
-                onClick = { onNavigate(com.onislanguage.app.navigation.Screen.Welcome.route) }
+                onClick = { viewModel.logout() }
             )
         }
         Spacer(modifier = Modifier.height(32.dp))
+        Text("ONISLANGUAGE V1.2.0", fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp, color = MaterialTheme.colorScheme.outline)
+    }
 
-        Text("ONISLANGUAGE V1.0.2", fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp, color = MaterialTheme.colorScheme.outline)
+    if (showOtpDialog) {
+        AlertDialog(
+            onDismissRequest = { showOtpDialog = false },
+            title = { Text("Xác thực thay đổi Email") },
+            text = {
+                Column {
+                    Text("Vui lòng nhập mã OTP đã gửi đến $editEmail")
+                    Spacer(Modifier.height(16.dp))
+                    OutlinedTextField(value = otp, onValueChange = { otp = it }, label = { Text(stringResource(R.string.otp_code)) })
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.verifyEmailChange(editEmail, otp) {
+                        showOtpDialog = false
+                        isEditing = false
+                    }
+                }) { Text(stringResource(R.string.verify)) }
+            }
+        )
     }
 }
 
 @Composable
-fun SectionHeader(title: String) {
+private fun SectionHeader(title: String) {
     Box(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp, start = 4.dp)) {
         Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, color = MaterialTheme.colorScheme.outline)
     }
 }
 
 @Composable
-fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
+private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -148,29 +183,7 @@ fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-fun PreferenceRow(icon: ImageVector, label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(20.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
-        }
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(label.uppercase(), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.outline)
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(value, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
-        }
-        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(20.dp))
-    }
-}
-
-@Composable
-fun SettingsRow(
+private fun SettingsRow(
     icon: ImageVector, label: String, type: String,
     checked: Boolean? = null, onChanged: ((Boolean) -> Unit)? = null,
     iconBg: Color? = null, iconColor: Color, textColor: Color? = null,
@@ -183,30 +196,11 @@ fun SettingsRow(
             .padding(20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (iconBg != null) {
-            Box(
-                modifier = Modifier.size(40.dp).background(iconBg, RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-        } else {
-            Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(20.dp))
-        }
+        Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(20.dp))
         Text(label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = textColor ?: MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
         
-        if (type == "toggle" && checked != null && onChanged != null) {
-            Switch(
-                checked = checked,
-                onCheckedChange = onChanged,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color.White,
-                    checkedTrackColor = MaterialTheme.colorScheme.primary
-                )
-            )
-        } else if (type == "link") {
+        if (type == "link") {
             Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(20.dp))
         }
     }

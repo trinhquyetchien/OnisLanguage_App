@@ -1,8 +1,10 @@
 package com.onislanguage.app.navigation
 
 sealed class Screen(val route: String) {
+    object Login : Screen("login")
     object Welcome : Screen("welcome")
     object Dashboard : Screen("dashboard")
+    object AiHub : Screen("ai_hub")
     object AudioToText : Screen("audio_to_text")
     object ImageAnalysis : Screen("image_analysis")
     object Kanji : Screen("kanji")

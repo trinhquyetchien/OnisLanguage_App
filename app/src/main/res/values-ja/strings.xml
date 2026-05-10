@@ -1,0 +1,80 @@
+<resources>
+    <string name="app_name">OnisLanguage</string>
+    <string name="settings">設定</string>
+    <string name="language">言語</string>
+    <string name="vietnamese">ベトナム語 (Tiếng Việt)</string>
+    <string name="japanese">日本語</string>
+    <string name="theme">テーマ</string>
+    <string name="dark_mode">ダークモード</string>
+    <string name="logout">ログアウト</string>
+    <string name="home">ホーム</string>
+    <string name="ai_tools">AIツール</string>
+    <string name="flashcards">単語カード</string>
+    <string name="quiz">クイズ</string>
+    
+    <!-- Auth -->
+    <string name="login">ログイン</string>
+    <string name="register">新規登録</string>
+    <string name="email">メールアドレス</string>
+    <string name="password">パスワード</string>
+    <string name="confirm_password">パスワードの確認</string>
+    <string name="password_mismatch">パスワードが一致しません</string>
+    <string name="display_name">表示名</string>
+    <string name="otp_code">OTPコード (6桁)</string>
+    <string name="verify">認証する</string>
+    <string name="send_otp">OTPを送信</string>
+    <string name="back">戻る</string>
+    <string name="login_sync_hint">AIと同期するためにログインしてください。</string>
+    <string name="register_hint">学習を始めるためにアカウントを作成してください。</string>
+    <string name="otp_hint">メールに送信されたOTPコードを入力してください。</string>
+    <string name="no_account">アカウントをお持ちでないですか？登録</string>
+    <string name="have_account">すでにアカウントをお持ちですか？ログイン</string>
+    <string name="auth_required_server">サーバーのコンテンツを見るにはログインが必要です</string>
+
+    <!-- General UI -->
+    <string name="learn_now">学習を開始</string>
+    <string name="download">ダウンロード</string>
+    <string name="delete">削除</string>
+    <string name="cancel">キャンセル</string>
+    <string name="create">作成</string>
+    <string name="save">保存</string>
+    <string name="edit">編集</string>
+    <string name="next">次へ</string>
+    <string name="previous">前へ</string>
+    
+    <!-- Home -->
+    <string name="welcome_user">ようこそ！ 👋</string>
+    <string name="home_subtitle">今日はどのスキルを磨きたいですか？</string>
+    <string name="quick_analysis">クイック分析</string>
+    <string name="paste_hint">日本語のテキストを貼り付け...</string>
+    <string name="recommended_features">おすすめの機能</string>
+    <string name="learn_vocab">単語学習</string>
+    <string name="do_exam">模擬試験</string>
+    <string name="jlpt_levels">N5 -> N1</string>
+    
+    <!-- AI Hub -->
+    <string name="ai_assistant">日本語学習アシスタント</string>
+    <string name="ai_hub_desc">翻訳、OCR、文字起こし、漢字認識。</string>
+    <string name="media_transcribe">オーディオ / ビデオ</string>
+    <string name="ocr_desc">画像からテキストを抽出。</string>
+    <string name="kanji_draw">漢字の手書き認識</string>
+    <string name="analysis">テキスト分析</string>
+
+    <!-- Flashcards -->
+    <string name="my_decks">マイデッキ</string>
+    <string name="server_decks">サーバーから</string>
+    <string name="create_new_deck">新しいデッキを作成</string>
+    <string name="deck_name">デッキ名</string>
+    <string name="description">説明</string>
+    <string name="studying">学習中</string>
+    <string name="tap_to_see_meaning">タップして意味を表示</string>
+    <string name="no_cards_in_deck">このデッキにはカードがありません</string>
+
+    <!-- Quiz -->
+    <string name="exam_library">クイズライブラリ</string>
+    <string name="my_exams">マイ試験</string>
+    <string name="search_exam">試験を検索...</string>
+    <string name="level_filter">レベル</string>
+    <string name="topic_filter">トピック</string>
+    <string name="start_exam">開始</string>
+</resources>

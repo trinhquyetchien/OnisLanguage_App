@@ -1,0 +1,80 @@
+<resources>
+    <string name="app_name">OnisLanguage</string>
+    <string name="settings">Cài đặt</string>
+    <string name="language">Ngôn ngữ</string>
+    <string name="vietnamese">Tiếng Việt</string>
+    <string name="japanese">日本語 (Tiếng Nhật)</string>
+    <string name="theme">Giao diện</string>
+    <string name="dark_mode">Chế độ tối</string>
+    <string name="logout">Đăng xuất</string>
+    <string name="home">Trang chủ</string>
+    <string name="ai_tools">Công cụ AI</string>
+    <string name="flashcards">Thẻ học</string>
+    <string name="quiz">Đề thi</string>
+    
+    <!-- Auth -->
+    <string name="login">Đăng nhập</string>
+    <string name="register">Đăng ký</string>
+    <string name="email">Email</string>
+    <string name="password">Mật khẩu</string>
+    <string name="confirm_password">Xác nhận mật khẩu</string>
+    <string name="password_mismatch">Mật khẩu xác nhận không khớp</string>
+    <string name="display_name">Tên hiển thị</string>
+    <string name="otp_code">Mã OTP (6 số)</string>
+    <string name="verify">Xác thực</string>
+    <string name="send_otp">Gửi OTP</string>
+    <string name="back">Quay lại</string>
+    <string name="login_sync_hint">Đăng nhập bằng email/password để đồng bộ AI.</string>
+    <string name="register_hint">Tạo tài khoản mới để bắt đầu học.</string>
+    <string name="otp_hint">Nhập mã OTP đã gửi đến email của bạn.</string>
+    <string name="no_account">Chưa có tài khoản? Đăng ký</string>
+    <string name="have_account">Đã có tài khoản? Đăng nhập</string>
+    <string name="auth_required_server">Vui lòng đăng nhập để xem nội dung từ server</string>
+
+    <!-- General UI -->
+    <string name="learn_now">Học ngay</string>
+    <string name="download">Tải về</string>
+    <string name="delete">Xóa</string>
+    <string name="cancel">Hủy</string>
+    <string name="create">Tạo</string>
+    <string name="save">Lưu</string>
+    <string name="edit">Sửa</string>
+    <string name="next">Tiếp theo</string>
+    <string name="previous">Trước</string>
+    
+    <!-- Home -->
+    <string name="welcome_user">Chào mừng học viên! 👋</string>
+    <string name="home_subtitle">Hôm nay bạn muốn rèn luyện kỹ năng nào?</string>
+    <string name="quick_analysis">Phân tích nhanh</string>
+    <string name="paste_hint">Dán văn bản tiếng Nhật...</string>
+    <string name="recommended_features">Tính năng đề xuất</string>
+    <string name="learn_vocab">Học từ vựng</string>
+    <string name="do_exam">Làm đề thi</string>
+    <string name="jlpt_levels">N5 -> N1</string>
+    
+    <!-- AI Hub -->
+    <string name="ai_assistant">Trợ lý học tiếng Nhật</string>
+    <string name="ai_hub_desc">Dịch, OCR, transcript và nhận diện Kanji.</string>
+    <string name="media_transcribe">Audio / Video</string>
+    <string name="ocr_desc">Nhận diện chữ Nhật từ ảnh.</string>
+    <string name="kanji_draw">Vẽ chữ Kanji</string>
+    <string name="analysis">Phân tích văn bản</string>
+
+    <!-- Flashcards -->
+    <string name="my_decks">Bộ của tôi</string>
+    <string name="server_decks">Từ Server</string>
+    <string name="create_new_deck">Tạo bộ thẻ mới</string>
+    <string name="deck_name">Tên bộ thẻ</string>
+    <string name="description">Mô tả</string>
+    <string name="studying">Đang học</string>
+    <string name="tap_to_see_meaning">Chạm để xem nghĩa</string>
+    <string name="no_cards_in_deck">Không có thẻ nào trong bộ này</string>
+
+    <!-- Quiz -->
+    <string name="exam_library">Kho đề</string>
+    <string name="my_exams">Đề của tôi</string>
+    <string name="search_exam">Tìm kiếm đề thi...</string>
+    <string name="level_filter">Cấp độ</string>
+    <string name="topic_filter">Chủ đề</string>
+    <string name="start_exam">Làm bài</string>
+</resources>

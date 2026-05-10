@@ -1,250 +1,279 @@
 package com.onislanguage.app.ui.screens
 
+import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.onislanguage.app.R
+import com.onislanguage.app.data.model.PracticeExam
+import com.onislanguage.app.di.ServiceLocator
 import com.onislanguage.app.navigation.Screen
+import com.onislanguage.app.ui.viewmodel.AuthViewModel
+import com.onislanguage.app.ui.viewmodel.PracticeViewModel
+import com.onislanguage.app.ui.components.AuthPromptView
 
-@OptIn(ExperimentalMaterial3Api::class)
+private enum class ExamTab(val labelRes: Int) {
+    Server(R.string.exam_library),
+    MyExams(R.string.my_exams)
+}
+
 @Composable
-fun QuizScreen(onNavigate: (String) -> Unit) {
-    var selected by remember { mutableStateOf<String?>(null) }
-    val scrollState = rememberScrollState()
-
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Vocabulary Quiz", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Text("QUESTION 3 OF 10", fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.outline)
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { onNavigate(Screen.Dashboard.route) }) {
-                        Icon(Icons.Default.Close, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    }
-                },
-                actions = {
-                    Row(
-                        modifier = Modifier
-                            .padding(end = 16.dp)
-                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(100.dp))
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("5", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("\uD83D\uDD25", fontSize = 14.sp)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
-            )
+fun QuizScreen(
+    onNavigate: (String) -> Unit = {},
+    viewModel: PracticeViewModel = viewModel(factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+            return ServiceLocator.providePracticeViewModel() as T
         }
-    ) { paddingValues ->
-        Box(
+    }),
+    authViewModel: AuthViewModel = viewModel(factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+            return ServiceLocator.provideAuthViewModel() as T
+        }
+    })
+) {
+    var selectedTab by remember { mutableStateOf(ExamTab.Server) }
+    var query by remember { mutableStateOf("") }
+    
+    val exams by viewModel.exams.collectAsState()
+    val currentExam by viewModel.currentExam.collectAsState()
+    val submissionResult by viewModel.submissionResult.collectAsState()
+    val authState by authViewModel.authState.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
+    LaunchedEffect(selectedTab) {
+        if (selectedTab == ExamTab.Server && authState != null) {
+            viewModel.loadExams()
+        }
+    }
+
+    if (submissionResult != null) {
+        QuizResultView(result = submissionResult!!, onFinish = { viewModel.finishExam() })
+    } else if (currentExam != null) {
+        QuizTakingView(exam = currentExam!!, onSubmit = { viewModel.submitExam(currentExam!!.exam_id, it) })
+    } else {
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.background)
+                .padding(20.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .verticalScroll(scrollState)
-                    .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 128.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Progress Bar
-                LinearProgressIndicator(
-                    progress = 0.3f,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-                Spacer(modifier = Modifier.height(32.dp))
+            Text(stringResource(R.string.quiz), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+            Text(stringResource(R.string.home_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            
+            Spacer(modifier = Modifier.height(24.dp))
 
-                Text(
-                    text = "What is the correct translation for the underlined word?",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 24.sp,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Question Card
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .shadow(2.dp, RoundedCornerShape(24.dp), spotColor = Color.Black.copy(alpha = 0.05f))
-                        .background(Color.White, RoundedCornerShape(24.dp))
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .absoluteOffset(x = 100.dp, y = (-70).dp)
-                            .size(100.dp)
-                            .shadow(40.dp, CircleShape, spotColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f))
-                            .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f), CircleShape)
+            TabRow(
+                selectedTabIndex = if (selectedTab == ExamTab.Server) 0 else 1,
+                containerColor = Color.Transparent,
+                divider = {},
+                indicator = { tabPositions ->
+                    TabRowDefaults.SecondaryIndicator(
+                        Modifier.tabIndicatorOffset(tabPositions[if (selectedTab == ExamTab.Server) 0 else 1]),
+                        color = MaterialTheme.colorScheme.primary
                     )
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = buildAnnotatedString {
-                                withStyle(SpanStyle(fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurface, letterSpacing = 1.sp)) {
-                                    append("彼女は")
-                                }
-                                withStyle(SpanStyle(fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurface, letterSpacing = 1.sp, textDecoration = TextDecoration.Underline)) {
-                                    append("図書館")
-                                }
-                                withStyle(SpanStyle(fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurface, letterSpacing = 1.sp)) {
-                                    append("で本を読みます。")
-                                }
-                            },
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Kanojo wa toshokan de hon o yomimasu.",
-                            fontSize = 14.sp,
-                            fontStyle = FontStyle.Italic,
-                            color = MaterialTheme.colorScheme.outline,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.VolumeUp, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        }
-                    }
                 }
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Options
-                val options = listOf(
-                    "A" to "Restaurant",
-                    "B" to "Library",
-                    "C" to "School",
-                    "D" to "Hospital"
-                )
-
-                options.forEach { (id, label) ->
-                    val isSelected = selected == id
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 16.dp)
-                            .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) else Color.White, RoundedCornerShape(16.dp))
-                            .border(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.15f), RoundedCornerShape(16.dp))
-                            .clickable { selected = id }
-                            .padding(horizontal = 24.dp, vertical = 20.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(id, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (isSelected) Color.White else MaterialTheme.colorScheme.outline)
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(
-                                text = label,
-                                fontSize = 18.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.weight(1f)
-                            )
-                            if (isSelected) {
-                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            }
-                        }
-                    }
+            ) {
+                Tab(selected = selectedTab == ExamTab.Server, onClick = { selectedTab = ExamTab.Server }) {
+                    Text(stringResource(ExamTab.Server.labelRes), modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold)
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-                Box(
-                    modifier = Modifier
-                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(100.dp))
-                        .padding(horizontal = 20.dp, vertical = 10.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.SmartToy, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Need a hint?", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary)
-                    }
+                Tab(selected = selectedTab == ExamTab.MyExams, onClick = { selectedTab = ExamTab.MyExams }) {
+                    Text(stringResource(ExamTab.MyExams.labelRes), modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold)
                 }
             }
 
-            // Bottom Action Bar
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .shadow(20.dp, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp), spotColor = Color.Black.copy(alpha = 0.12f))
-                    .background(Color.White.copy(alpha = 0.9f), RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                    .padding(top = 16.dp, bottom = 32.dp, start = 24.dp, end = 24.dp)
-            ) {
-                Row(
+            Spacer(modifier = Modifier.height(20.dp))
+
+            if (selectedTab == ExamTab.Server && authState == null) {
+                AuthPromptView(onLoginClick = { onNavigate(Screen.Login.route) })
+            } else if (isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Lightbulb, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("HINT", fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.8f))
+                    placeholder = { Text(stringResource(R.string.search_exam)) },
+                    shape = RoundedCornerShape(16.dp),
+                    leadingIcon = { Icon(Icons.Default.Search, null) }
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                val filteredExams = if (selectedTab == ExamTab.Server) {
+                    exams.filter { it.title.contains(query, true) }
+                } else {
+                    emptyList() // Placeholder for local exams
+                }
+
+                if (filteredExams.isEmpty()) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Không có đề thi nào")
                     }
-                    Spacer(modifier = Modifier.width(24.dp))
-                    Button(
-                        onClick = { },
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(filteredExams) { exam ->
+                            ExamListCardV2(exam, onStart = { viewModel.startExam(exam.exam_id) })
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun QuizTakingView(exam: PracticeExam, onSubmit: (Map<String, String>) -> Unit) {
+    val answers = remember { mutableStateMapOf<String, String>() }
+    var currentQIndex by remember { mutableIntStateOf(0) }
+    val currentQuestion = exam.questions[currentQIndex]
+
+    Column(Modifier.fillMaxSize().padding(20.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(exam.title, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Text("${currentQIndex + 1}/${exam.questions.size}")
+        }
+        
+        LinearProgressIndicator(
+            progress = { (currentQIndex + 1).toFloat() / exam.questions.size },
+            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+            strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+        )
+
+        Surface(
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        ) {
+            Column(Modifier.padding(24.dp)) {
+                Text(currentQuestion.prompt, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(32.dp))
+                
+                currentQuestion.options.forEach { option ->
+                    val isSelected = answers[currentQuestion.question_id] == option
+                    Surface(
                         modifier = Modifier
-                            .weight(1f)
-                            .height(56.dp)
-                            .clip(RoundedCornerShape(16.dp)),
-                        enabled = selected != null,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp)
+                            .clickable { answers[currentQuestion.question_id] = option },
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.White,
+                        border = if (isSelected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                     ) {
-                        Text("Check Answer", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.White)
+                        Text(
+                            text = option,
+                            modifier = Modifier.padding(16.dp),
+                            color = if (isSelected) Color.White else Color.Black,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        )
                     }
-                    Spacer(modifier = Modifier.width(24.dp))
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.SkipNext, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("SKIP", fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.8f))
+                }
+            }
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (currentQIndex > 0) {
+                OutlinedButton(onClick = { currentQIndex-- }, modifier = Modifier.weight(1f).height(56.dp)) {
+                    Text(stringResource(R.string.previous))
+                }
+            }
+            
+            if (currentQIndex < exam.questions.size - 1) {
+                Button(onClick = { currentQIndex++ }, modifier = Modifier.weight(1f).height(56.dp)) {
+                    Text(stringResource(R.string.next))
+                }
+            } else {
+                Button(
+                    onClick = { onSubmit(answers.toMap()) },
+                    modifier = Modifier.weight(1f).height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                ) {
+                    Text("Nộp bài")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun QuizResultView(result: com.onislanguage.app.data.model.PracticeSubmissionResponse, onFinish: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text("Kết quả bài thi", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+        Spacer(Modifier.height(16.dp))
+        
+        Surface(
+            shape = CircleShape,
+            color = if (result.score >= 50) Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
+            modifier = Modifier.size(150.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("${result.score.toInt()}%", fontSize = 36.sp, fontWeight = FontWeight.Black, color = if (result.score >= 50) Color(0xFF2E7D32) else Color.Red)
+                    Text("${result.correct_answers}/${result.total_questions}", style = MaterialTheme.typography.labelMedium)
+                }
+            }
+        }
+        
+        Spacer(Modifier.height(40.dp))
+        
+        Button(onClick = onFinish, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+            Text("Hoàn thành")
+        }
+    }
+}
+
+@Composable
+private fun ExamListCardV2(exam: PracticeExam, onStart: () -> Unit) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = Color.White)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(exam.title, fontWeight = FontWeight.Black, maxLines = 1)
+                    Text("${exam.topic} • ${exam.level.uppercase()} • ${exam.question_count} câu", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Button(onClick = onStart, shape = RoundedCornerShape(12.dp)) {
+                    Text(stringResource(R.string.start_exam))
+                }
+            }
+            if (exam.tags.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items(exam.tags) { tag ->
+                        Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(8.dp)) {
+                            Text(tag, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall)
+                        }
                     }
                 }
             }

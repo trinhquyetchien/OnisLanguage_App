@@ -18,6 +18,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.onislanguage.app.R
+import com.onislanguage.app.utils.LanguageManager
 
 @Composable
 fun SettingsScreen(
@@ -25,7 +29,10 @@ fun SettingsScreen(
     onThemeChange: (Boolean) -> Unit,
     onLogout: () -> Unit
 ) {
+    val context = LocalContext.current
     var isLoggedIn by remember { mutableStateOf(true) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
+    val currentLang = LanguageManager.getLanguage(context)
 
     Column(
         modifier = Modifier
@@ -34,11 +41,10 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState())
             .padding(20.dp)
     ) {
-        HeaderSection("Cài đặt", "Quản lý tài khoản và cấu hình ứng dụng")
+        HeaderSection(stringResource(R.string.settings), "Quản lý tài khoản và cấu hình ứng dụng")
         
         Spacer(modifier = Modifier.height(32.dp))
         
-        // User Profile Section (Mock)
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -70,26 +76,17 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                if (!isLoggedIn) {
-                    Button(
-                        onClick = { isLoggedIn = true },
-                        shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
-                        Text("Đăng nhập")
-                    }
-                }
             }
         }
         
         Spacer(modifier = Modifier.height(32.dp))
         
-        Text("Giao diện", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.theme), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(12.dp))
         
         SettingsToggleItem(
             icon = if (isDarkTheme) Icons.Default.DarkMode else Icons.Default.LightMode,
-            title = "Chế độ tối (Dark Mode)",
+            title = stringResource(R.string.dark_mode),
             checked = isDarkTheme,
             onCheckedChange = onThemeChange
         )
@@ -105,15 +102,12 @@ fun SettingsScreen(
             onClick = {}
         )
         SettingsActionItem(
-            icon = Icons.Default.Notifications,
-            title = "Thông báo nhắc nhở",
-            onClick = {}
-        )
-        SettingsActionItem(
             icon = Icons.Default.Translate,
-            title = "Ngôn ngữ ứng dụng",
-            subtitle = "Tiếng Việt",
-            onClick = {}
+            title = stringResource(R.string.language),
+            subtitle = if (currentLang.contains("ja")) stringResource(R.string.japanese) 
+                       else if (currentLang.contains("en")) stringResource(R.string.english)
+                       else stringResource(R.string.vietnamese),
+            onClick = { showLanguageDialog = true }
         )
         
         if (isLoggedIn) {
@@ -129,18 +123,64 @@ fun SettingsScreen(
             ) {
                 Icon(Icons.Default.Logout, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Đăng xuất", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.logout), fontWeight = FontWeight.Bold)
             }
         }
         
         Spacer(modifier = Modifier.height(100.dp))
-        Text(
-            "Phiên bản 1.0.0 (Mock UI)",
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+    }
+
+    if (showLanguageDialog) {
+        AlertDialog(
+            onDismissRequest = { showLanguageDialog = false },
+            title = { Text(stringResource(R.string.language)) },
+            confirmButton = {
+                TextButton(onClick = { showLanguageDialog = false }) { Text("Đóng") }
+            },
+            text = {
+                Column {
+                    LanguageOption(
+                        label = stringResource(R.string.vietnamese),
+                        selected = !currentLang.contains("ja"),
+                        onClick = {
+                            LanguageManager.setLanguage(context, "vi")
+                            showLanguageDialog = false
+                        }
+                    )
+                    LanguageOption(
+                        label = stringResource(R.string.japanese),
+                        selected = currentLang.contains("ja"),
+                        onClick = {
+                            LanguageManager.setLanguage(context, "ja")
+                            showLanguageDialog = false
+                        }
+                    )
+                    LanguageOption(
+                        label = stringResource(R.string.english),
+                        selected = currentLang.contains("en"),
+                        onClick = {
+                            LanguageManager.setLanguage(context, "en")
+                            showLanguageDialog = false
+                        }
+                    )
+                }
+            }
         )
+    }
+}
+
+@Composable
+fun LanguageOption(label: String, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(selected = selected, onClick = onClick)
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(label)
     }
 }
 
