@@ -111,4 +111,41 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
                 }
         }
     }
+
+    fun initiatePasswordChange(
+        currentPassword: String,
+        newPassword: String,
+        confirmNewPassword: String,
+        onOtpSent: () -> Unit
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            repository.initiatePasswordChange(currentPassword, newPassword, confirmNewPassword)
+                .onSuccess {
+                    _isLoading.value = false
+                    onOtpSent()
+                }
+                .onFailure {
+                    _isLoading.value = false
+                    _error.value = "Yêu cầu OTP đổi mật khẩu thất bại: ${it.message}"
+                }
+        }
+    }
+
+    fun verifyPasswordChange(otp: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            repository.verifyPasswordChange(otp)
+                .onSuccess {
+                    _isLoading.value = false
+                    onSuccess()
+                }
+                .onFailure {
+                    _isLoading.value = false
+                    _error.value = "Xác thực OTP đổi mật khẩu thất bại: ${it.message}"
+                }
+        }
+    }
 }

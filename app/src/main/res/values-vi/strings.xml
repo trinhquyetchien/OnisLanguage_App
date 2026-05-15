@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">OnisLanguage</string>
+    <string name="app_name">Onis</string>
     <string name="settings">Cài đặt</string>
     <string name="language">Ngôn ngữ</string>
     <string name="vietnamese">Tiếng Việt</string>
@@ -77,4 +77,24 @@
     <string name="level_filter">Cấp độ</string>
     <string name="topic_filter">Chủ đề</string>
     <string name="start_exam">Làm bài</string>
+    <string name="history">Lịch sử</string>
+    <string name="account_syncing">Đang đồng bộ tài khoản</string>
+    <string name="login_to_sync">Đăng nhập để lưu tiến độ</string>
+    <string name="edit_profile">Sửa hồ sơ</string>
+    <string name="update_profile">Cập nhật thông tin hiển thị</string>
+    <string name="clear_local_data">Xóa dữ liệu nội bộ</string>
+    <string name="clear_selected">Xóa đã chọn</string>
+    <string name="ai_from_file">AI từ file</string>
+    <string name="no_server_exams">Không có đề thi nào</string>
+    <string name="no_personal_exams">Chưa có đề thi cá nhân</string>
+    <string name="personal_exam">Đề cá nhân</string>
+    <string name="download_exam">Tải xuống</string>
+    <string name="submit_exam">Nộp bài</string>
+    <string name="clear_translation_history">Lịch sử dịch</string>
+    <string name="clear_ocr_history">Lịch sử OCR</string>
+    <string name="clear_media_history">Lịch sử audio/video</string>
+    <string name="clear_flashcards_local">Bộ thẻ local</string>
+    <string name="clear_exams_local">Đề thi local</string>
+    <string name="clear_study_usage">Thống kê học tập</string>
+    <string name="clear_chat_suggestions">Gợi ý chatbot</string>
 </resources>

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">OnisLanguage</string>
+    <string name="app_name">Onis</string>
     <string name="settings">設定</string>
     <string name="language">言語</string>
     <string name="vietnamese">ベトナム語 (Tiếng Việt)</string>
@@ -77,4 +77,24 @@
     <string name="level_filter">レベル</string>
     <string name="topic_filter">トピック</string>
     <string name="start_exam">開始</string>
+    <string name="history">履歴</string>
+    <string name="account_syncing">アカウント同期中</string>
+    <string name="login_to_sync">進捗同期のためログインしてください</string>
+    <string name="edit_profile">プロフィール編集</string>
+    <string name="update_profile">表示情報を更新</string>
+    <string name="clear_local_data">ローカルデータを削除</string>
+    <string name="clear_selected">選択した項目を削除</string>
+    <string name="ai_from_file">ファイルからAI作成</string>
+    <string name="no_server_exams">サーバーに試験がありません</string>
+    <string name="no_personal_exams">個人試験はまだありません</string>
+    <string name="personal_exam">個人試験</string>
+    <string name="download_exam">ダウンロード</string>
+    <string name="submit_exam">提出</string>
+    <string name="clear_translation_history">翻訳履歴</string>
+    <string name="clear_ocr_history">OCR履歴</string>
+    <string name="clear_media_history">音声/動画履歴</string>
+    <string name="clear_flashcards_local">ローカル単語カード</string>
+    <string name="clear_exams_local">ローカル試験</string>
+    <string name="clear_study_usage">学習統計</string>
+    <string name="clear_chat_suggestions">チャット提案</string>
 </resources>

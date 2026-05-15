@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">OnisLanguage</string>
+    <string name="app_name">Onis</string>
     <string name="settings">Settings</string>
     <string name="language">Language</string>
     <string name="vietnamese">Vietnamese (Tiếng Việt)</string>
@@ -76,4 +76,24 @@
     <string name="level_filter">Level</string>
     <string name="topic_filter">Topic</string>
     <string name="start_exam">Start</string>
+    <string name="history">History</string>
+    <string name="account_syncing">Syncing account</string>
+    <string name="login_to_sync">Log in to sync progress</string>
+    <string name="edit_profile">Edit profile</string>
+    <string name="update_profile">Update display info</string>
+    <string name="clear_local_data">Clear local data</string>
+    <string name="clear_selected">Delete selected</string>
+    <string name="ai_from_file">AI from file</string>
+    <string name="no_server_exams">No exams on server</string>
+    <string name="no_personal_exams">No personal exams yet</string>
+    <string name="personal_exam">Personal exam</string>
+    <string name="download_exam">Download</string>
+    <string name="submit_exam">Submit</string>
+    <string name="clear_translation_history">Translation history</string>
+    <string name="clear_ocr_history">OCR history</string>
+    <string name="clear_media_history">Audio/video history</string>
+    <string name="clear_flashcards_local">Local flashcards</string>
+    <string name="clear_exams_local">Local exams</string>
+    <string name="clear_study_usage">Study usage stats</string>
+    <string name="clear_chat_suggestions">Chat suggestions</string>
 </resources>

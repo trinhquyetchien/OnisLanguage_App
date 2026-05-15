@@ -1,6 +1,8 @@
 package com.onislanguage.app.ui.screens
 
 import androidx.compose.animation.*
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -19,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -29,13 +33,16 @@ import com.onislanguage.app.R
 import com.onislanguage.app.data.model.PracticeExam
 import com.onislanguage.app.di.ServiceLocator
 import com.onislanguage.app.navigation.Screen
+import com.onislanguage.app.ui.components.SystemToastHost
+import com.onislanguage.app.ui.components.SystemToastType
 import com.onislanguage.app.ui.viewmodel.AuthViewModel
 import com.onislanguage.app.ui.viewmodel.PracticeViewModel
 import com.onislanguage.app.ui.components.AuthPromptView
+import com.onislanguage.app.utils.UriFileUtils
 
 private enum class ExamTab(val labelRes: Int) {
-    Server(R.string.exam_library),
-    MyExams(R.string.my_exams)
+    MyExams(R.string.my_exams),
+    Server(R.string.exam_library)
 }
 
 @Composable
@@ -52,53 +59,71 @@ fun QuizScreen(
         }
     })
 ) {
-    var selectedTab by remember { mutableStateOf(ExamTab.Server) }
+    val context = LocalContext.current
+    var selectedTab by remember { mutableStateOf(ExamTab.MyExams) }
     var query by remember { mutableStateOf("") }
     
     val exams by viewModel.exams.collectAsState()
+    val localExams by viewModel.localExams.collectAsState()
     val currentExam by viewModel.currentExam.collectAsState()
     val submissionResult by viewModel.submissionResult.collectAsState()
     val authState by authViewModel.authState.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val notice by viewModel.notice.collectAsState()
+    val error by viewModel.error.collectAsState()
+
+    val fileImportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        val displayName = UriFileUtils.getDisplayName(context, uri)?.substringBeforeLast(".")?.ifBlank { "Đề AI từ file" } ?: "Đề AI từ file"
+        val content = UriFileUtils.extractTextFromUri(context, uri)
+        viewModel.generateExamFromText(displayName, content)
+    }
 
     LaunchedEffect(selectedTab) {
         if (selectedTab == ExamTab.Server && authState != null) {
             viewModel.loadExams()
+        } else if (selectedTab == ExamTab.MyExams) {
+            viewModel.loadLocalExams()
         }
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     if (submissionResult != null) {
         QuizResultView(result = submissionResult!!, onFinish = { viewModel.finishExam() })
     } else if (currentExam != null) {
-        QuizTakingView(exam = currentExam!!, onSubmit = { viewModel.submitExam(currentExam!!.exam_id, it) })
+        val isLocalExam = currentExam!!.tags.contains("local")
+        QuizTakingView(
+            exam = currentExam!!,
+            isLocal = isLocalExam,
+            onSubmit = { viewModel.submitExam(currentExam!!.exam_id, it, isLocalExam) }
+        )
     } else {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+                .background(Color.Transparent)
                 .padding(20.dp)
         ) {
             Text(stringResource(R.string.quiz), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
-            Text(stringResource(R.string.home_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant)
             
             Spacer(modifier = Modifier.height(24.dp))
 
             TabRow(
-                selectedTabIndex = if (selectedTab == ExamTab.Server) 0 else 1,
+                selectedTabIndex = if (selectedTab == ExamTab.MyExams) 0 else 1,
                 containerColor = Color.Transparent,
                 divider = {},
                 indicator = { tabPositions ->
                     TabRowDefaults.SecondaryIndicator(
-                        Modifier.tabIndicatorOffset(tabPositions[if (selectedTab == ExamTab.Server) 0 else 1]),
+                        Modifier.tabIndicatorOffset(tabPositions[if (selectedTab == ExamTab.MyExams) 0 else 1]),
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
             ) {
-                Tab(selected = selectedTab == ExamTab.Server, onClick = { selectedTab = ExamTab.Server }) {
-                    Text(stringResource(ExamTab.Server.labelRes), modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold)
-                }
                 Tab(selected = selectedTab == ExamTab.MyExams, onClick = { selectedTab = ExamTab.MyExams }) {
                     Text(stringResource(ExamTab.MyExams.labelRes), modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold)
+                }
+                Tab(selected = selectedTab == ExamTab.Server, onClick = { selectedTab = ExamTab.Server }) {
+                    Text(stringResource(ExamTab.Server.labelRes), modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -125,34 +150,100 @@ fun QuizScreen(
                 val filteredExams = if (selectedTab == ExamTab.Server) {
                     exams.filter { it.title.contains(query, true) }
                 } else {
-                    emptyList() // Placeholder for local exams
+                    localExams.filter { it.title.contains(query, true) }
                 }
 
+                if (selectedTab == ExamTab.MyExams) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Button(
+                            onClick = { onNavigate(Screen.CreateExam.route) },
+                            modifier = Modifier.weight(1f).height(54.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                        ) {
+                            Icon(Icons.Default.Add, null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.create_exam), fontWeight = FontWeight.Bold)
+                        }
+                        OutlinedButton(
+                            onClick = { fileImportLauncher.launch("*/*") },
+                            modifier = Modifier.weight(1f).height(54.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                        ) {
+                            Icon(Icons.Default.AutoAwesome, null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.ai_from_file), fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
                 if (filteredExams.isEmpty()) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Không có đề thi nào")
+                        Text(
+                            if (selectedTab == ExamTab.Server) stringResource(R.string.no_server_exams)
+                            else stringResource(R.string.no_personal_exams)
+                        )
                     }
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(filteredExams) { exam ->
-                            ExamListCardV2(exam, onStart = { viewModel.startExam(exam.exam_id) })
+                            ExamListCardV2(
+                                exam = exam,
+                                isLocalExam = selectedTab == ExamTab.MyExams,
+                                onPrimaryAction = {
+                                    if (selectedTab == ExamTab.MyExams) {
+                                        viewModel.startExam(exam.exam_id, true)
+                                    } else {
+                                        viewModel.downloadExam(exam.exam_id)
+                                    }
+                                }
+                            )
                         }
                     }
                 }
             }
         }
     }
+        SystemToastHost(
+            message = notice,
+            type = SystemToastType.Success,
+            onDismiss = viewModel::clearFeedback,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        )
+        SystemToastHost(
+            message = error,
+            type = SystemToastType.Error,
+            onDismiss = viewModel::clearFeedback,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        )
+    }
 }
 
 @Composable
-fun QuizTakingView(exam: PracticeExam, onSubmit: (Map<String, String>) -> Unit) {
+fun QuizTakingView(exam: PracticeExam, isLocal: Boolean, onSubmit: (Map<String, String>) -> Unit) {
     val answers = remember { mutableStateMapOf<String, String>() }
     var currentQIndex by remember { mutableIntStateOf(0) }
     val currentQuestion = exam.questions[currentQIndex]
 
     Column(Modifier.fillMaxSize().padding(20.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(exam.title, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(exam.title, fontWeight = FontWeight.Bold)
+                Text(
+                    if (isLocal) "${stringResource(R.string.personal_exam)} • ${exam.level}" else "${exam.topic} • ${exam.level}",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
             Text("${currentQIndex + 1}/${exam.questions.size}")
         }
         
@@ -162,10 +253,27 @@ fun QuizTakingView(exam: PracticeExam, onSubmit: (Map<String, String>) -> Unit) 
             strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
         )
 
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            itemsIndexed(exam.questions) { index, question ->
+                val answered = answers.containsKey(question.question_id)
+                FilterChip(
+                    selected = currentQIndex == index,
+                    onClick = { currentQIndex = index },
+                    label = { Text("${index + 1}") },
+                    leadingIcon = if (answered) {
+                        { Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp)) }
+                    } else null
+                )
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
         Surface(
             modifier = Modifier.fillMaxWidth().weight(1f),
             shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.45f))
         ) {
             Column(Modifier.padding(24.dp)) {
                 Text(currentQuestion.prompt, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
@@ -179,13 +287,13 @@ fun QuizTakingView(exam: PracticeExam, onSubmit: (Map<String, String>) -> Unit) 
                             .padding(vertical = 6.dp)
                             .clickable { answers[currentQuestion.question_id] = option },
                         shape = RoundedCornerShape(16.dp),
-                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.White,
-                        border = if (isSelected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                        color = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline.copy(alpha = 0.45f))
                     ) {
                         Text(
                             text = option,
                             modifier = Modifier.padding(16.dp),
-                            color = if (isSelected) Color.White else Color.Black,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                         )
                     }
@@ -200,6 +308,8 @@ fun QuizTakingView(exam: PracticeExam, onSubmit: (Map<String, String>) -> Unit) 
                 OutlinedButton(onClick = { currentQIndex-- }, modifier = Modifier.weight(1f).height(56.dp)) {
                     Text(stringResource(R.string.previous))
                 }
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
             }
             
             if (currentQIndex < exam.questions.size - 1) {
@@ -210,9 +320,10 @@ fun QuizTakingView(exam: PracticeExam, onSubmit: (Map<String, String>) -> Unit) 
                 Button(
                     onClick = { onSubmit(answers.toMap()) },
                     modifier = Modifier.weight(1f).height(56.dp),
+                    enabled = answers.size == exam.questions.size,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
                 ) {
-                    Text("Nộp bài")
+                    Text(stringResource(R.string.submit_exam))
                 }
             }
         }
@@ -230,13 +341,13 @@ fun QuizResultView(result: com.onislanguage.app.data.model.PracticeSubmissionRes
         Spacer(Modifier.height(16.dp))
         
         Surface(
-            shape = CircleShape,
-            color = if (result.score >= 50) Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
+            shape = RoundedCornerShape(36.dp),
+            color = if (result.score >= 50) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.errorContainer,
             modifier = Modifier.size(150.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${result.score.toInt()}%", fontSize = 36.sp, fontWeight = FontWeight.Black, color = if (result.score >= 50) Color(0xFF2E7D32) else Color.Red)
+                    Text("${result.score.toInt()}%", fontSize = 36.sp, fontWeight = FontWeight.Black, color = if (result.score >= 50) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
                     Text("${result.correct_answers}/${result.total_questions}", style = MaterialTheme.typography.labelMedium)
                 }
             }
@@ -251,20 +362,32 @@ fun QuizResultView(result: com.onislanguage.app.data.model.PracticeSubmissionRes
 }
 
 @Composable
-private fun ExamListCardV2(exam: PracticeExam, onStart: () -> Unit) {
-    ElevatedCard(
+private fun ExamListCardV2(
+    exam: PracticeExam,
+    isLocalExam: Boolean,
+    onPrimaryAction: () -> Unit
+) {
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.elevatedCardColors(containerColor = Color.White)
+        shape = RoundedCornerShape(26.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 4.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.45f))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(exam.title, fontWeight = FontWeight.Black, maxLines = 1)
-                    Text("${exam.topic} • ${exam.level.uppercase()} • ${exam.question_count} câu", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    val displayCount = exam.question_count.takeIf { it > 0 } ?: exam.questions.size
+                    Text("${exam.topic} • ${exam.level.uppercase()} • ${displayCount} câu", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Button(onClick = onStart, shape = RoundedCornerShape(12.dp)) {
-                    Text(stringResource(R.string.start_exam))
+                Button(onClick = onPrimaryAction, shape = RoundedCornerShape(12.dp)) {
+                    Icon(
+                        if (isLocalExam) Icons.Default.PlayArrow else Icons.Default.Download,
+                        contentDescription = null
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(if (isLocalExam) stringResource(R.string.start_exam) else stringResource(R.string.download_exam))
                 }
             }
             if (exam.tags.isNotEmpty()) {
