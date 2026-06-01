@@ -21,6 +21,7 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -106,28 +107,7 @@ fun QuizScreen(
         ) {
             Text(stringResource(R.string.quiz), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
             
-            Spacer(modifier = Modifier.height(24.dp))
-
-            TabRow(
-                selectedTabIndex = if (selectedTab == ExamTab.MyExams) 0 else 1,
-                containerColor = Color.Transparent,
-                divider = {},
-                indicator = { tabPositions ->
-                    TabRowDefaults.SecondaryIndicator(
-                        Modifier.tabIndicatorOffset(tabPositions[if (selectedTab == ExamTab.MyExams) 0 else 1]),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            ) {
-                Tab(selected = selectedTab == ExamTab.MyExams, onClick = { selectedTab = ExamTab.MyExams }) {
-                    Text(stringResource(ExamTab.MyExams.labelRes), modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold)
-                }
-                Tab(selected = selectedTab == ExamTab.Server, onClick = { selectedTab = ExamTab.Server }) {
-                    Text(stringResource(ExamTab.Server.labelRes), modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             if (selectedTab == ExamTab.Server && authState == null) {
                 AuthPromptView(onLoginClick = { onNavigate(Screen.Login.route) })
@@ -136,16 +116,94 @@ fun QuizScreen(
                     CircularProgressIndicator()
                 }
             } else {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
+                Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(stringResource(R.string.search_exam)) },
-                    shape = RoundedCornerShape(16.dp),
-                    leadingIcon = { Icon(Icons.Default.Search, null) }
-                )
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+                                .padding(4.dp)
+                        ) {
+                            val isMyExams = selectedTab == ExamTab.MyExams
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (isMyExams) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                    .clickable { selectedTab = ExamTab.MyExams }
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    stringResource(ExamTab.MyExams.labelRes),
+                                    color = if (isMyExams) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            val isServer = selectedTab == ExamTab.Server
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (isServer) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                    .clickable { selectedTab = ExamTab.Server }
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    stringResource(ExamTab.Server.labelRes),
+                                    color = if (isServer) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                        if (selectedTab == ExamTab.MyExams) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Button(
+                                    onClick = { onNavigate(Screen.CreateExam.route) },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
+                                ) {
+                                    Icon(Icons.Default.Add, null)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(stringResource(R.string.create_exam), fontWeight = FontWeight.Bold)
+                                }
+                                OutlinedButton(
+                                    onClick = { fileImportLauncher.launch("*/*") },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
+                                ) {
+                                    Icon(Icons.Default.AutoAwesome, null)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(stringResource(R.string.ai_from_file), fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text(stringResource(R.string.search_exam)) },
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            leadingIcon = { Icon(Icons.Default.Search, null) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
 
                 val filteredExams = if (selectedTab == ExamTab.Server) {
                     exams.filter { it.title.contains(query, true) }
@@ -153,35 +211,6 @@ fun QuizScreen(
                     localExams.filter { it.title.contains(query, true) }
                 }
 
-                if (selectedTab == ExamTab.MyExams) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Button(
-                            onClick = { onNavigate(Screen.CreateExam.route) },
-                            modifier = Modifier.weight(1f).height(54.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
-                        ) {
-                            Icon(Icons.Default.Add, null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.create_exam), fontWeight = FontWeight.Bold)
-                        }
-                        OutlinedButton(
-                            onClick = { fileImportLauncher.launch("*/*") },
-                            modifier = Modifier.weight(1f).height(54.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
-                        ) {
-                            Icon(Icons.Default.AutoAwesome, null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.ai_from_file), fontWeight = FontWeight.Bold)
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(20.dp))
-                }
                 if (filteredExams.isEmpty()) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
@@ -190,7 +219,10 @@ fun QuizScreen(
                         )
                     }
                 } else {
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         items(filteredExams) { exam ->
                             ExamListCardV2(
                                 exam = exam,

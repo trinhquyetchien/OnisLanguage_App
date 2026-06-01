@@ -41,7 +41,9 @@ object ServiceLocator {
     val authRepository by lazy { 
         AuthRepository(apiService, appContext ?: throw IllegalStateException("ServiceLocator not initialized")) 
     }
-    val aiRepository by lazy { AiRepository(apiService) }
+    val aiRepository by lazy {
+        AiRepository(apiService, dbHelper ?: throw IllegalStateException("ServiceLocator not initialized"))
+    }
     val flashcardRepository by lazy { 
         FlashcardRepository(apiService, dbHelper ?: throw IllegalStateException("ServiceLocator not initialized")) 
     }
@@ -58,7 +60,7 @@ object ServiceLocator {
     }
 
     fun provideFlashcardViewModel(): FlashcardViewModel {
-        return FlashcardViewModel(flashcardRepository)
+        return FlashcardViewModel(flashcardRepository, aiRepository)
     }
 
     fun providePracticeViewModel(): PracticeViewModel {

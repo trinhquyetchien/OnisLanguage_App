@@ -40,8 +40,10 @@ fun VocabularyScreen(onNavigate: (String) -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 128.dp)
+                .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 128.dp)
         ) {
+            HeaderSection("Vocabulary", "Từ mới, ví dụ và tín hiệu độ khó được gom về một bảng tra cứu gọn hơn.")
+            Spacer(modifier = Modifier.height(24.dp))
             // Stats Row
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 StatCard(modifier = Modifier.weight(1f), label = "43 New", color = MaterialTheme.colorScheme.primary, bg = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f), progress = 0.8f, sub = "NEW")
@@ -59,12 +61,12 @@ fun VocabularyScreen(onNavigate: (String) -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
-                    .clip(RoundedCornerShape(16.dp)),
+                    .clip(RoundedCornerShape(20.dp)),
                 placeholder = { Text("Search vocabulary...", color = MaterialTheme.colorScheme.outline) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.outline) },
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent
                 )
@@ -80,17 +82,18 @@ fun VocabularyScreen(onNavigate: (String) -> Unit) {
                         modifier = Modifier
                             .shadow(if (isActive) 8.dp else 0.dp, RoundedCornerShape(100.dp), spotColor = if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.3f) else Color.Transparent)
                             .background(
-                                brush = if (isActive) Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary))
-                                else Brush.linearGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surfaceVariant)),
+                                brush = if (isActive) Brush.linearGradient(listOf(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.tertiaryContainer))
+                                else Brush.linearGradient(listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.surface)),
                                 shape = RoundedCornerShape(100.dp)
                             )
+                            .border(1.dp, if (isActive) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(100.dp))
                             .padding(horizontal = 20.dp, vertical = 10.dp)
                     ) {
                         Text(
                             chips[i],
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isActive) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -110,10 +113,10 @@ fun VocabularyScreen(onNavigate: (String) -> Unit) {
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 24.dp, bottom = 32.dp)
-                .shadow(20.dp, RoundedCornerShape(100.dp), spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
+                .shadow(10.dp, RoundedCornerShape(100.dp), spotColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f))
                 .clip(RoundedCornerShape(100.dp))
                 .clickable { }
-                .background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)))
+                .background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.9f))))
                 .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -129,15 +132,15 @@ fun VocabularyScreen(onNavigate: (String) -> Unit) {
 fun StatCard(modifier: Modifier = Modifier, label: String, color: Color, bg: Color, progress: Float, sub: String) {
     Box(
         modifier = modifier
-            .shadow(10.dp, RoundedCornerShape(16.dp), spotColor = Color.Black.copy(alpha = 0.02f))
-            .background(Color.White, RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(20.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.45f), RoundedCornerShape(20.dp))
             .padding(12.dp)
     ) {
         Column {
             Text(label, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
-                progress = progress,
+                progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(4.dp)
@@ -167,8 +170,8 @@ fun VocabCard(kanji: String, kana: String, meaning: String, type: String, level:
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color.Black.copy(alpha = 0.05f))
-            .background(Color.White, RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(24.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.45f), RoundedCornerShape(24.dp))
             .padding(20.dp)
     ) {
         Column(horizontalAlignment = Alignment.Start) {

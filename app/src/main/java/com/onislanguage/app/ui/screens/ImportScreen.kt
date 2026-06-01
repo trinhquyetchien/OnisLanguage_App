@@ -36,15 +36,18 @@ fun ImportScreen(onNavigate: (String) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Color.Transparent)
             .verticalScroll(scrollState)
-            .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 120.dp)
+            .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 120.dp)
     ) {
+        HeaderSection("Import Material", "Đưa video, audio hoặc hình ảnh vào luồng phân tích chung của Onis.")
+        Spacer(modifier = Modifier.height(24.dp))
         // Tab Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(100.dp))
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(24.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
                 .padding(6.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -56,11 +59,7 @@ fun ImportScreen(onNavigate: (String) -> Unit) {
                         .clip(RoundedCornerShape(100.dp))
                         .clickable { activeTab = tab }
                         .background(
-                            brush = if (isActive) Brush.linearGradient(
-                                colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
-                            ) else Brush.linearGradient(
-                                colors = listOf(Color.Transparent, Color.Transparent)
-                            )
+                            if (isActive) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
                         )
                         .padding(vertical = 10.dp),
                     contentAlignment = Alignment.Center
@@ -69,7 +68,7 @@ fun ImportScreen(onNavigate: (String) -> Unit) {
                         text = tab.replaceFirstChar { it.uppercase() },
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (isActive) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -80,8 +79,8 @@ fun ImportScreen(onNavigate: (String) -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(32.dp))
-                .border(2.dp, MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(32.dp))
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(32.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f), RoundedCornerShape(32.dp))
                 .padding(32.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -89,41 +88,40 @@ fun ImportScreen(onNavigate: (String) -> Unit) {
                 Box(
                     modifier = Modifier
                         .size(64.dp)
-                        .shadow(20.dp, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+                        .shadow(10.dp, RoundedCornerShape(22.dp), spotColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.25f))
                         .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
-                            ),
-                            shape = CircleShape
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            shape = RoundedCornerShape(22.dp)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(imageVector = Icons.Default.CloudUpload, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
+                    Icon(imageVector = Icons.Default.CloudUpload, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Drag & drop your $activeTab here",
+                    text = "Thêm $activeTab vào workspace",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "or",
+                    text = "hoặc",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 OutlinedButton(
                     onClick = { },
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primaryContainer),
-                    shape = RoundedCornerShape(12.dp)
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text("Browse Files", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    Text("Browse files", fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
-                    text = "MP4, MOV, AVI • Max 500MB",
+                    text = "MP4, MOV, AVI • tối đa 500MB",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
@@ -135,7 +133,7 @@ fun ImportScreen(onNavigate: (String) -> Unit) {
 
         // URL Import
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Divider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+            HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
             Text(
                 text = "OR IMPORT FROM URL",
                 fontSize = 10.sp,
@@ -144,7 +142,7 @@ fun ImportScreen(onNavigate: (String) -> Unit) {
                 color = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
-            Divider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+            HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
         }
         Spacer(modifier = Modifier.height(16.dp))
         
@@ -154,9 +152,10 @@ fun ImportScreen(onNavigate: (String) -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
-                .clip(RoundedCornerShape(16.dp)),
-            colors = TextFieldDefaults.textFieldColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                .clip(RoundedCornerShape(20.dp)),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent
             ),
@@ -181,8 +180,8 @@ fun ImportScreen(onNavigate: (String) -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.White, RoundedCornerShape(24.dp))
-                .shadow(elevation = 2.dp, shape = RoundedCornerShape(24.dp), spotColor = Color.Black.copy(alpha = 0.05f))
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(30.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f), RoundedCornerShape(30.dp))
                 .padding(24.dp)
         ) {
             Column {
@@ -191,7 +190,7 @@ fun ImportScreen(onNavigate: (String) -> Unit) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Language Settings", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text("Language Settings", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("AUTO-DETECT", fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.outline)
                         Spacer(modifier = Modifier.width(8.dp))
@@ -216,8 +215,7 @@ fun ImportScreen(onNavigate: (String) -> Unit) {
                     Box(
                         modifier = Modifier
                             .size(36.dp)
-                            .shadow(10.dp, CircleShape, spotColor = Color.Black.copy(alpha = 0.1f))
-                            .background(Color.White, CircleShape),
+                            .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(Icons.Default.SwapVert, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
@@ -240,7 +238,7 @@ fun ImportScreen(onNavigate: (String) -> Unit) {
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
-            Text("✨ Start Analysis", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text("Start analysis", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
     }
 }
@@ -249,7 +247,8 @@ fun ImportScreen(onNavigate: (String) -> Unit) {
 fun CloudButton(icon: ImageVector, label: String) {
     Row(
         modifier = Modifier
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(100.dp))
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(100.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.45f), RoundedCornerShape(100.dp))
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -265,7 +264,8 @@ fun LanguageSelector(emoji: String, language: String) {
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(18.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

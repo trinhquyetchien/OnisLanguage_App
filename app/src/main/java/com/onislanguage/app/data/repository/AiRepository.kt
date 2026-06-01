@@ -48,6 +48,7 @@ class AiRepository(
         const val FEATURE_KANJI = "kanji"
         const val FEATURE_OCR = "ocr"
         const val FEATURE_AUDIO = "audio_transcribe"
+        const val FEATURE_RECORD = "record_transcribe"
         const val FEATURE_VIDEO = "video_transcribe"
         const val FEATURE_YOUTUBE = "youtube_transcribe"
     }

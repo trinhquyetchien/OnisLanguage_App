@@ -1,19 +1,15 @@
 package com.onislanguage.app
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.ui.Modifier
-import com.onislanguage.app.ui.theme.OnisLanguageTheme
+import androidx.appcompat.app.AppCompatActivity
 import com.onislanguage.app.ui.layout.AppLayout
-
 import com.onislanguage.app.di.ServiceLocator
+import com.onislanguage.app.utils.LanguageManager
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        LanguageManager.applySavedLanguage(this)
         super.onCreate(savedInstanceState)
         ServiceLocator.init(this)
         setContent {

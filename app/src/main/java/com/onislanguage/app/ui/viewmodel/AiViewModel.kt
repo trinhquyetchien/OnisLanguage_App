@@ -475,10 +475,10 @@ class AiViewModel(private val repository: AiRepository) : ViewModel() {
                     _isLoading.value = false
                     loadLocalTranscriptionHistory()
                     refreshServerTranscriptHistory()
-                    val feature = if (sourceType == "audio") {
-                        AiRepository.FEATURE_AUDIO to "Nhận diện audio"
-                    } else {
-                        AiRepository.FEATURE_VIDEO to "Nhận diện video"
+                    val feature = when (sourceType) {
+                        "audio" -> AiRepository.FEATURE_AUDIO to "Nhận diện audio"
+                        "record" -> AiRepository.FEATURE_RECORD to "Ghi âm trực tiếp"
+                        else -> AiRepository.FEATURE_VIDEO to "Nhận diện video"
                     }
                     recordStudyUsage(feature.first, feature.second)
                 }

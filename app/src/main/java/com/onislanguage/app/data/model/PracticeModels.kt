@@ -4,9 +4,16 @@ data class PracticeQuestion(
     val question_id: String,
     val kind: String,
     val prompt: String,
+    val imageUrl: String? = null,
+    val audioUrl: String? = null,
     val options: List<String>,
-    val position: Int
+    val position: Int,
+    val correct_answer: String? = null,
+    val explanation: String? = null
 )
+
+data class AIExamGenerateRequest(val topic: String, val count: Int = 5)
+data class AIExamGenerateResponse(val questions: List<PracticeQuestion>)
 
 data class PracticeExam(
     val exam_id: String,

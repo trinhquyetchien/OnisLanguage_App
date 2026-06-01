@@ -1,9 +1,10 @@
 <resources>
-    <string name="app_name">Onis</string>
+    <string name="app_name">Onis Language</string>
     <string name="settings">Cài đặt</string>
     <string name="language">Ngôn ngữ</string>
     <string name="vietnamese">Tiếng Việt</string>
     <string name="japanese">日本語 (Tiếng Nhật)</string>
+    <string name="english">Tiếng Anh</string>
     <string name="theme">Giao diện</string>
     <string name="dark_mode">Chế độ tối</string>
     <string name="logout">Đăng xuất</string>
@@ -56,6 +57,10 @@
     <string name="ai_assistant">Trợ lý học tiếng Nhật</string>
     <string name="ai_hub_desc">Dịch, OCR, transcript và nhận diện Kanji.</string>
     <string name="media_transcribe">Audio / Video</string>
+    <string name="ai_ocr_title">OCR</string>
+    <string name="ai_record_title">Ghi âm thành văn bản</string>
+    <string name="ai_record_desc">Ghi giọng nói và chuyển sang văn bản.</string>
+    <string name="ai_kanji_desc">Nhận diện nét vẽ và phân tích Kanji.</string>
     <string name="ocr_desc">Nhận diện chữ Nhật từ ảnh.</string>
     <string name="kanji_draw">Vẽ chữ Kanji</string>
     <string name="analysis">Phân tích văn bản</string>
@@ -63,6 +68,9 @@
     <!-- Flashcards -->
     <string name="my_decks">Bộ của tôi</string>
     <string name="server_decks">Từ Server</string>
+    <string name="search_deck">Tìm bộ thẻ...</string>
+    <string name="no_server_decks">Không có bộ thẻ trên server</string>
+    <string name="no_matching_decks">Không tìm thấy bộ thẻ phù hợp</string>
     <string name="create_new_deck">Tạo bộ thẻ mới</string>
     <string name="deck_name">Tên bộ thẻ</string>
     <string name="description">Mô tả</string>
@@ -73,6 +81,15 @@
     <!-- Quiz -->
     <string name="exam_library">Kho đề</string>
     <string name="my_exams">Đề của tôi</string>
+    <string name="create_exam">Tạo đề thi mới</string>
+    <string name="exam_title">Tiêu đề đề thi</string>
+    <string name="exam_topic">Chủ đề (ví dụ: Ngữ pháp N3)</string>
+    <string name="exam_level">Cấp độ (N1-N5)</string>
+    <string name="add_question">Thêm câu hỏi</string>
+    <string name="question_prompt">Nội dung câu hỏi</string>
+    <string name="question_correct_answer">Đáp án đúng</string>
+    <string name="save_exam">Lưu đề thi</string>
+    <string name="exam_created">Tạo đề thi thành công!</string>
     <string name="search_exam">Tìm kiếm đề thi...</string>
     <string name="level_filter">Cấp độ</string>
     <string name="topic_filter">Chủ đề</string>

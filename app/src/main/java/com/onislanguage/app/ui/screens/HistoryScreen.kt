@@ -57,6 +57,7 @@ import com.onislanguage.app.navigation.Screen
 import com.onislanguage.app.ui.viewmodel.AiViewModel
 import kotlin.math.max
 
+
 @Composable
 fun HistoryScreen(
     onNavigate: (String) -> Unit,

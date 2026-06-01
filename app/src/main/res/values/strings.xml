@@ -57,6 +57,10 @@
     <string name="ai_assistant">Japanese Learning Assistant</string>
     <string name="ai_hub_desc">Translate, OCR, transcribe and recognize Kanji.</string>
     <string name="media_transcribe">Audio / Video</string>
+    <string name="ai_ocr_title">OCR</string>
+    <string name="ai_record_title">Record to Text</string>
+    <string name="ai_record_desc">Record voice and convert to text.</string>
+    <string name="ai_kanji_desc">Recognize handwritten strokes and analyze Kanji.</string>
     <string name="ocr_desc">Recognize Japanese from images.</string>
     <string name="kanji_draw">Handwritten Kanji</string>
     <string name="analysis">Text Analysis</string>
@@ -64,6 +68,9 @@
     <!-- Flashcards -->
     <string name="my_decks">My Decks</string>
     <string name="server_decks">From Server</string>
+    <string name="search_deck">Search decks...</string>
+    <string name="no_server_decks">No decks on server</string>
+    <string name="no_matching_decks">No matching decks</string>
     <string name="create_new_deck">Create New Deck</string>
     <string name="deck_name">Deck Name</string>
     <string name="description">Description</string>

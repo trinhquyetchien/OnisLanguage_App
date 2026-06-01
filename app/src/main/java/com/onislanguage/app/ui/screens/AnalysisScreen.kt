@@ -1,267 +1,336 @@
 package com.onislanguage.app.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.filled.AutoStories
+import androidx.compose.material.icons.filled.TextSnippet
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import com.onislanguage.app.navigation.Screen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.onislanguage.app.data.api.FuriganaTokenDto
+import com.onislanguage.app.data.api.JapaneseTextDisplayDto
+import com.onislanguage.app.data.api.KanjiItemDto
+import com.onislanguage.app.data.api.VocabularyItemDto
+import com.onislanguage.app.di.ServiceLocator
+import com.onislanguage.app.ui.viewmodel.AiViewModel
+import com.onislanguage.app.ui.viewmodel.FlashcardViewModel
 
 @Composable
-fun AnalysisScreen(onNavigate: (String) -> Unit) {
-    var view by remember { mutableStateOf("original") }
+fun AnalysisScreen(
+    onNavigate: (String) -> Unit,
+    aiViewModel: AiViewModel = viewModel(factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+            return ServiceLocator.provideAiViewModel() as T
+        }
+    }),
+    flashcardViewModel: FlashcardViewModel = viewModel(factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+            return ServiceLocator.provideFlashcardViewModel() as T
+        }
+    })
+) {
+    var input by remember { mutableStateOf("日本語を勉強しています。今日は文法と単語を確認したいです。") }
+    val analysisResult by aiViewModel.textAnalysisResult.collectAsState()
+    val isLoading by aiViewModel.isLanguageLoading.collectAsState()
+    val languageError by aiViewModel.languageError.collectAsState()
     val scrollState = rememberScrollState()
+
+    LaunchedEffect(Unit) {
+        aiViewModel.clearTextAnalysis()
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(scrollState)
-            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 128.dp)
+            .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 128.dp)
     ) {
-        // Media Preview
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .shadow(10.dp, RoundedCornerShape(16.dp), spotColor = Color.Black.copy(alpha = 0.02f))
-                .background(Color.White, RoundedCornerShape(16.dp))
-                .padding(12.dp)
+        Text("Phân tích văn bản", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = input,
+            onValueChange = { input = it },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 6,
+            shape = RoundedCornerShape(20.dp),
+            placeholder = { Text("Paste văn bản Nhật hoặc Việt vào đây...") }
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Button(
+            onClick = {
+                val sourceLanguage = if (containsJapaneseForMobile(input)) "ja" else "vi"
+                aiViewModel.analyzeText(input, sourceLanguage)
+            },
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(16.dp)
         ) {
-            AsyncImage(
-                model = "https://picsum.photos/seed/tokyo/200/140",
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .width(80.dp)
-                    .height(56.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
+            Text("Phân tích")
+        }
+
+        if (isLoading) {
+            Spacer(modifier = Modifier.height(16.dp))
+            CircularProgressIndicator()
+        }
+
+        languageError?.let {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(it, color = MaterialTheme.colorScheme.error)
+        }
+
+        analysisResult?.let { result ->
+            Spacer(modifier = Modifier.height(20.dp))
+            SectionTitle("Theo từng câu")
+            Spacer(modifier = Modifier.height(10.dp))
+            result.sentences.forEach { sentence ->
+                Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    shape = RoundedCornerShape(18.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.16f))
                 ) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                    Text("00:45 / 3:42", fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        AnalysisJapaneseTextDisplay(sentence.text_display)
+                    }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                LinearProgressIndicator(
-                    progress = 0.2f,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(6.dp)),
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                SectionTitle("Từ vựng")
+                Button(
+                    onClick = {
+                        flashcardViewModel.addAnalysisItemsToDeck(
+                            vocabulary = result.analysis.vocabulary,
+                            kanji = result.kanji
+                        )
+                    },
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text("Tạo bộ flashcard")
+                }
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            if (result.analysis.vocabulary.isEmpty()) {
+                EmptyAnalysisText()
+            } else {
+                result.analysis.vocabulary.forEach { item ->
+                    VocabularyAnalysisRow(item)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            SectionTitle("Ngữ pháp")
+            Spacer(modifier = Modifier.height(10.dp))
+            if (result.analysis.grammar_points.isEmpty()) {
+                EmptyAnalysisText()
+            } else {
+                result.analysis.grammar_points.forEach { item ->
+                    AnalysisInfoCard(
+                        title = item.pattern,
+                        content = item.explanation_vi,
+                        trailing = item.example_ja
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            SectionTitle("Kanji")
+            Spacer(modifier = Modifier.height(10.dp))
+            if (result.kanji.isEmpty()) {
+                EmptyAnalysisText()
+            } else {
+                result.kanji.forEach { item ->
+                    KanjiAnalysisRow(item)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionTitle(title: String) {
+    Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+}
+
+@Composable
+private fun EmptyAnalysisText() {
+    Text("Không có dữ liệu.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+@Composable
+private fun VocabularyAnalysisRow(item: VocabularyItemDto) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.36f)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(item.surface, fontWeight = FontWeight.Bold)
+                item.reading?.takeIf { it.isNotBlank() }?.let {
+                    Text(it, color = MaterialTheme.colorScheme.primary)
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(item.meaning_vi, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun AnalysisJapaneseTextDisplay(display: JapaneseTextDisplayDto) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        AnalysisFuriganaText(tokens = display.tokens, fallbackText = display.text)
+        display.translation_vi?.takeIf { it.isNotBlank() }?.let {
+            Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun AnalysisFuriganaText(
+    tokens: List<FuriganaTokenDto>,
+    fallbackText: String
+) {
+    if (tokens.isEmpty()) {
+        Text(text = fallbackText, fontWeight = FontWeight.Bold)
+        return
+    }
+
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        tokens.forEach { token ->
+            AnalysisFuriganaToken(token)
+        }
+    }
+}
+
+@Composable
+private fun AnalysisFuriganaToken(token: FuriganaTokenDto) {
+    val readingSlotHeight = 12.dp
+    Column(
+        modifier = Modifier.padding(horizontal = 2.dp, vertical = 1.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(0.dp)
+    ) {
+        Box(
+            modifier = Modifier.height(readingSlotHeight),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            token.reading?.takeIf { it.isNotBlank() }?.let { reading ->
+                Text(
+                    text = reading,
+                    fontSize = 10.sp,
+                    lineHeight = 10.sp,
                     color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.primaryContainer
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Toggle
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(100.dp))
-                .padding(4.dp)
-        ) {
-            Row {
-                ToggleBtn(label = "Original", isActive = view == "original") { view = "original" }
-                ToggleBtn(label = "Translation", isActive = view == "translation") { view = "translation" }
-            }
-        }
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Transcript Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Transcript", fontSize = 20.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp, color = MaterialTheme.colorScheme.onSurface)
-                Spacer(modifier = Modifier.width(8.dp))
-                Box(
-                    modifier = Modifier
-                        .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(100.dp))
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Text("47", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                }
-            }
-            Text("\uD83C\uDDEF\uD83C\uDDF5", fontSize = 20.sp)
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Transcript items
-        TranscriptCard(
-            text = "日本は世界で最も急速に高齢化が進んでいる国の一つです。",
-            translation = "Japan is one of the world's most rapidly aging countries.",
-            tag = "Noun Phrase Structure"
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        TranscriptCard(
-            text = "この現象は、経済に大きな影響を与えています。",
-            translation = "This phenomenon is having a significant impact on the economy.",
-            tag = "Causal Relationship"
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Action Bar
-        Row(modifier = Modifier.fillMaxWidth()) {
-            ActionBtn(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Default.MenuBook,
-                label = "Vocab Analysis",
-                iconColor = MaterialTheme.colorScheme.primary,
-                onTap = { onNavigate(Screen.Vocabulary.route) }
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            ActionBtn(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Default.Description,
-                label = "Grammar Analysis",
-                iconColor = MaterialTheme.colorScheme.tertiary,
-                onTap = { onNavigate(Screen.Grammar.route) }
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .shadow(15.dp, RoundedCornerShape(16.dp), spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-                    .clip(RoundedCornerShape(16.dp))
-                    .clickable { onNavigate(Screen.Chat.route) }
-                    .background(Brush.linearGradient(colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)))
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.SmartToy, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "PRACTICE AI",
-                        textAlign = TextAlign.Center,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 0.5.sp,
-                        color = Color.White
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ToggleBtn(label: String, isActive: Boolean, onTap: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .clickable { onTap() }
-            .background(if (isActive) MaterialTheme.colorScheme.primary else Color.Transparent, RoundedCornerShape(100.dp))
-            .padding(horizontal = 24.dp, vertical = 8.dp)
-    ) {
         Text(
-            text = label,
-            fontSize = 12.sp,
+            text = token.surface,
             fontWeight = FontWeight.Bold,
-            color = if (isActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+            fontSize = 20.sp,
+            lineHeight = 24.sp,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
 
 @Composable
-fun TranscriptCard(text: String, translation: String, tag: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White, RoundedCornerShape(16.dp))
-            .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color.Black.copy(alpha = 0.05f))
-            .padding(20.dp)
+private fun KanjiAnalysisRow(item: KanjiItemDto) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.36f)
     ) {
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .size(12.dp)
-                .shadow(10.dp, CircleShape, spotColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f))
-                .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f), CircleShape)
-        )
-        Column {
-            Text(text, fontSize = 18.sp, fontWeight = FontWeight.Medium, lineHeight = 27.sp, color = MaterialTheme.colorScheme.onSurface)
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(translation, fontSize = 14.sp, fontStyle = FontStyle.Italic, fontWeight = FontWeight.Light, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(100.dp))
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(tag.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.primary)
-                Spacer(modifier = Modifier.width(6.dp))
-                Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(12.dp))
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Divider(color = MaterialTheme.colorScheme.surfaceVariant, thickness = 1.dp)
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Row {
-                    Icon(Icons.Default.BookmarkBorder, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Icon(Icons.Default.BarChart, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                }
-                Row(
-                    modifier = Modifier
-                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(100.dp))
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.AddCircleOutline, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("ADD TO DECK", fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+        Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(item.kanji, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+            Column {
+                item.reading?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+                item.meaning_vi?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
         }
     }
 }
 
 @Composable
-fun ActionBtn(modifier: Modifier = Modifier, icon: ImageVector, label: String, iconColor: Color, onTap: () -> Unit) {
-    Box(
-        modifier = modifier
-            .shadow(10.dp, RoundedCornerShape(16.dp), spotColor = Color.Black.copy(alpha = 0.02f))
-            .clip(RoundedCornerShape(16.dp))
-            .clickable { onTap() }
-            .background(Color.White)
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
+private fun AnalysisInfoCard(title: String, content: String, trailing: String?) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.16f))
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(24.dp))
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Default.TextSnippet, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Text(title, fontWeight = FontWeight.Bold)
+            }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(label.uppercase(), textAlign = TextAlign.Center, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 0.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(content, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            trailing?.takeIf { it.isNotBlank() }?.let {
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(it, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            }
         }
+    }
+}
+
+private fun containsJapaneseForMobile(text: String): Boolean {
+    return text.any { ch ->
+        ch in '\u3040'..'\u30ff' || ch in '\u3400'..'\u9fff'
     }
 }

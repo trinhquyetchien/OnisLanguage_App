@@ -3,6 +3,7 @@ import com.onislanguage.app.utils.UriFileUtils
 
 import android.Manifest
 import android.media.AudioAttributes
+import android.media.MediaRecorder
 import android.media.MediaPlayer
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -139,24 +140,35 @@ fun AiHubScreen(onNavigate: (String) -> Unit, onBack: () -> Unit) {
             }
         }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                 AiActionCard(Icons.Default.GraphicEq, stringResource(R.string.media_transcribe), stringResource(R.string.media_transcribe), {
                     onNavigate(Screen.AudioToText.route)
-                }, Modifier.weight(1f))
-                AiActionCard(Icons.Default.ImageSearch, "OCR", stringResource(R.string.ocr_desc), {
+                }, Modifier.weight(1f).height(156.dp))
+                AiActionCard(Icons.Default.ImageSearch, stringResource(R.string.ai_ocr_title), stringResource(R.string.ocr_desc), {
                     onNavigate(Screen.ImageAnalysis.route)
-                }, Modifier.weight(1f))
+                }, Modifier.weight(1f).height(156.dp))
             }
         }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AiActionCard(Icons.Default.Create, stringResource(R.string.kanji_draw), stringResource(R.string.kanji_draw), {
-                    onNavigate(Screen.Kanji.route)
-                }, Modifier.weight(1f))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                AiActionCard(Icons.Default.Mic, stringResource(R.string.ai_record_title), stringResource(R.string.ai_record_desc), {
+                    onNavigate(Screen.RecordToText.route)
+                }, Modifier.weight(1f).height(156.dp))
                 AiActionCard(Icons.Default.Analytics, stringResource(R.string.analysis), stringResource(R.string.analysis), {
                     onNavigate(Screen.Analysis.route)
-                }, Modifier.weight(1f))
+                }, Modifier.weight(1f).height(156.dp))
             }
+        }
+        item {
+            AiActionCard(
+                icon = Icons.Default.Create,
+                title = stringResource(R.string.kanji_draw),
+                subtitle = stringResource(R.string.ai_kanji_desc),
+                onClick = { onNavigate(Screen.Kanji.route) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(176.dp)
+            )
         }
     }
 }
@@ -227,7 +239,7 @@ fun AudioToTextScreenV2(
     val filteredHistory = remember(history, activeTab) {
         history.filter { item ->
             when (activeTab) {
-                "audio" -> item.sourceType == "audio"
+                "audio" -> item.sourceType == "audio" || item.sourceType == "record"
                 "video" -> item.sourceType == "video"
                 "youtube" -> item.sourceType == "youtube"
                 "server" -> false
@@ -395,7 +407,6 @@ fun AudioToTextScreenV2(
             Spacer(Modifier.height(12.dp))
             Text(it, color = MaterialTheme.colorScheme.error)
         }
-
         Spacer(modifier = Modifier.height(32.dp))
         Text(if (activeTab == "server") "Media từ server" else "File đã dịch", fontSize = 18.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(12.dp))
@@ -547,6 +558,220 @@ fun AudioToTextResultScreenV2(
                 )
             }
             item { Spacer(Modifier.height(64.dp)) }
+        }
+    }
+}
+
+@Composable
+fun RecordToTextScreenV2(
+    onOpenResult: (Long) -> Unit,
+    viewModel: AiViewModel = viewModel(factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+            return ServiceLocator.provideAiViewModel() as T
+        }
+    })
+) {
+    val context = LocalContext.current
+    val history by viewModel.transcriptionHistory.collectAsState()
+    val latestHistoryId by viewModel.latestTranscriptHistoryId.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val uploadProgress by viewModel.uploadProgress.collectAsState()
+    val uploadLabel by viewModel.uploadLabel.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val recordHistory = remember(history) {
+        history.filter { it.sourceType == "record" }
+    }
+    var isRecording by remember { mutableStateOf(false) }
+    var currentRecordingFile by remember { mutableStateOf<File?>(null) }
+    var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
+    var recordingError by remember { mutableStateOf<String?>(null) }
+
+    fun startAudioRecording() {
+        val recordingsDir = File(context.cacheDir, "recordings").apply { mkdirs() }
+        val outputFile = File(recordingsDir, "record_${System.currentTimeMillis()}.m4a")
+        try {
+            @Suppress("DEPRECATION")
+            val mediaRecorder = MediaRecorder()
+            mediaRecorder.apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setAudioSamplingRate(16000)
+                setAudioEncodingBitRate(64000)
+                setOutputFile(outputFile.absolutePath)
+                prepare()
+                start()
+            }
+            recorder = mediaRecorder
+            currentRecordingFile = outputFile
+            isRecording = true
+            recordingError = null
+        } catch (e: Exception) {
+            recorder?.release()
+            recorder = null
+            currentRecordingFile = null
+            isRecording = false
+            recordingError = "Không thể bắt đầu ghi âm: ${e.message}"
+        }
+    }
+
+    fun stopAudioRecordingAndTranscribe() {
+        val activeRecorder = recorder
+        if (activeRecorder == null) {
+            isRecording = false
+            return
+        }
+        try {
+            activeRecorder.stop()
+        } catch (_: Exception) {
+            currentRecordingFile?.delete()
+            recordingError = "File ghi âm bị lỗi, vui lòng thử lại."
+        } finally {
+            activeRecorder.release()
+            recorder = null
+            isRecording = false
+        }
+
+        val recordedFile = currentRecordingFile
+        currentRecordingFile = null
+        if (recordedFile != null && recordedFile.exists() && recordedFile.length() > 0L) {
+            val displayName = recordedFile.name
+            viewModel.transcribeMedia(
+                mediaFile = recordedFile,
+                sourceType = "record",
+                sourceUri = recordedFile.toUri().toString(),
+                displayTitle = mediaTitleFromName(displayName),
+                uploadFileName = displayName
+            )
+        }
+    }
+
+    val recordPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            startAudioRecording()
+        } else {
+            recordingError = "Bạn cần cấp quyền micro để ghi âm."
+        }
+    }
+
+    LaunchedEffect(latestHistoryId) {
+        latestHistoryId?.let {
+            onOpenResult(it)
+            viewModel.consumeLatestTranscriptHistoryId()
+        }
+    }
+    LaunchedEffect(Unit) {
+        viewModel.loadTranscriptionHistory()
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            try {
+                recorder?.release()
+            } catch (_: Exception) {
+            }
+            recorder = null
+            isRecording = false
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Transparent)
+            .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 120.dp)
+    ) {
+        HeaderSection("Record to Text", "Ghi âm trực tiếp, gửi Kotoba Whisper và nhận transcript.")
+        Spacer(modifier = Modifier.height(24.dp))
+
+        SectionCardV2 {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = if (isRecording) Icons.Default.RadioButtonChecked else Icons.Default.Mic,
+                    contentDescription = null,
+                    tint = if (isRecording) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(44.dp)
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                Text(
+                    text = if (isRecording) "Đang ghi âm..." else "Sẵn sàng ghi âm",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = {
+                        if (isRecording) {
+                            stopAudioRecordingAndTranscribe()
+                        } else {
+                            val granted = ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.RECORD_AUDIO
+                            ) == PackageManager.PERMISSION_GRANTED
+                            if (granted) {
+                                startAudioRecording()
+                            } else {
+                                recordPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                            }
+                        }
+                    },
+                    enabled = !isLoading,
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isRecording) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        imageVector = if (isRecording) Icons.Default.Stop else Icons.Default.Mic,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(if (isRecording) "Stop & transcribe" else "Start recording")
+                }
+            }
+        }
+
+        if (isLoading) {
+            Spacer(Modifier.height(20.dp))
+            UploadProgressCard(
+                label = uploadLabel,
+                progress = uploadProgress,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        error?.let {
+            Spacer(Modifier.height(12.dp))
+            Text(it, color = MaterialTheme.colorScheme.error)
+        }
+        recordingError?.let {
+            Spacer(Modifier.height(12.dp))
+            Text(it, color = MaterialTheme.colorScheme.error)
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+        Text(
+            text = "Lịch sử bản ghi",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        if (recordHistory.isEmpty()) {
+            Text(
+                text = "Chưa có bản ghi nào.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                recordHistory.forEach { item ->
+                    MediaTranscriptHistoryCard(item = item) {
+                        viewModel.openTranscriptHistoryItem(item)
+                        onOpenResult(item.id)
+                    }
+                }
+            }
         }
     }
 }
@@ -1565,6 +1790,7 @@ fun FlashcardScreenV2(
     var selectedTab by remember { mutableIntStateOf(0) } // 0: My Decks, 1: Server
     var studyingDeckId by remember { mutableStateOf<String?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
     
     val context = LocalContext.current
     val authState by authViewModel.authState.collectAsState()
@@ -1605,29 +1831,7 @@ fun FlashcardScreenV2(
                 .padding(20.dp)
         ) {
             Text(stringResource(R.string.flashcards), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
-            
-            Spacer(modifier = Modifier.height(24.dp))
-
-            TabRow(
-                selectedTabIndex = selectedTab,
-                containerColor = Color.Transparent,
-                divider = {},
-                indicator = { tabPositions ->
-                    TabRowDefaults.SecondaryIndicator(
-                        Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            ) {
-                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
-                    Text(stringResource(R.string.my_decks), modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold)
-                }
-                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
-                    Text(stringResource(R.string.server_decks), modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             importNotice?.let {
                 Text(it, color = MaterialTheme.colorScheme.primary)
@@ -1641,49 +1845,147 @@ fun FlashcardScreenV2(
                     CircularProgressIndicator()
                 }
             } else {
-                if (selectedTab == 0) {
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        item {
-                            Button(
-                                onClick = { showCreateDialog = true },
-                                modifier = Modifier.fillMaxWidth().height(56.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.primary)
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+                                .padding(4.dp)
+                        ) {
+                            val isMyDecks = selectedTab == 0
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (isMyDecks) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                    .clickable { selectedTab = 0 }
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.Add, null)
-                                Spacer(Modifier.width(8.dp))
-                                Text(stringResource(R.string.create_new_deck), fontWeight = FontWeight.Bold)
+                                Text(
+                                    stringResource(R.string.my_decks),
+                                    color = if (isMyDecks) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            val isServerDecks = selectedTab == 1
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (isServerDecks) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                    .clickable { selectedTab = 1 }
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    stringResource(R.string.server_decks),
+                                    color = if (isServerDecks) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.SemiBold
+                                )
                             }
                         }
-                        item {
-                            OutlinedButton(
-                                onClick = { fileImportLauncher.launch("*/*") },
-                                modifier = Modifier.fillMaxWidth().height(56.dp),
-                                shape = RoundedCornerShape(16.dp)
-                            ) {
-                                Icon(Icons.Default.AutoAwesome, null)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Tạo bằng AI từ file", fontWeight = FontWeight.Bold)
-                            }
-                        }
-                        items(localDecks) { deck ->
-                            DeckCardV2(
-                                title = deck.title,
-                                cardCount = deck.cards.size,
-                                onLearn = { 
-                                    viewModel.selectDeck(deck.deck_id)
-                                    studyingDeckId = deck.deck_id 
+
+                        if (selectedTab == 0) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Button(
+                                    onClick = { showCreateDialog = true },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
+                                ) {
+                                    Icon(Icons.Default.Add, null)
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(stringResource(R.string.create_new_deck), fontWeight = FontWeight.Bold)
                                 }
+                                OutlinedButton(
+                                    onClick = { fileImportLauncher.launch("*/*") },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
+                                ) {
+                                    Icon(Icons.Default.AutoAwesome, null)
+                                    Spacer(Modifier.width(6.dp))
+                                    Text("Tạo bằng AI từ file", fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text(stringResource(R.string.search_deck)) },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                if (selectedTab == 0) {
+                    val filteredLocalDecks = localDecks.filter {
+                        it.title.contains(searchQuery, ignoreCase = true)
+                    }
+                    if (filteredLocalDecks.isEmpty()) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(
+                                if (searchQuery.isBlank()) stringResource(R.string.no_cards_in_deck)
+                                else stringResource(R.string.no_matching_decks),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(filteredLocalDecks) { deck ->
+                                DeckCardV2(
+                                    title = deck.title,
+                                    cardCount = deck.cards.size,
+                                    onLearn = {
+                                        viewModel.selectDeck(deck.deck_id)
+                                        studyingDeckId = deck.deck_id
+                                    }
+                                )
+                            }
                         }
                     }
                 } else {
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(remoteDecks) { deck ->
-                            ServerDeckCardV2(
-                                title = deck.title,
-                                onDownload = { viewModel.downloadDeck(deck.deck_id) }
+                    val filteredRemoteDecks = remoteDecks.filter {
+                        it.title.contains(searchQuery, ignoreCase = true)
+                    }
+                    if (filteredRemoteDecks.isEmpty()) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(
+                                if (searchQuery.isBlank()) stringResource(R.string.no_server_decks)
+                                else stringResource(R.string.no_matching_decks),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(filteredRemoteDecks) { deck ->
+                                ServerDeckCardV2(
+                                    title = deck.title,
+                                    onDownload = { viewModel.downloadDeck(deck.deck_id) }
+                                )
+                            }
                         }
                     }
                 }

@@ -1,9 +1,10 @@
 <resources>
-    <string name="app_name">Onis</string>
+    <string name="app_name">Onis Language</string>
     <string name="settings">設定</string>
     <string name="language">言語</string>
     <string name="vietnamese">ベトナム語 (Tiếng Việt)</string>
     <string name="japanese">日本語</string>
+    <string name="english">英語</string>
     <string name="theme">テーマ</string>
     <string name="dark_mode">ダークモード</string>
     <string name="logout">ログアウト</string>
@@ -56,6 +57,10 @@
     <string name="ai_assistant">日本語学習アシスタント</string>
     <string name="ai_hub_desc">翻訳、OCR、文字起こし、漢字認識。</string>
     <string name="media_transcribe">オーディオ / ビデオ</string>
+    <string name="ai_ocr_title">OCR</string>
+    <string name="ai_record_title">録音して文字起こし</string>
+    <string name="ai_record_desc">音声を録音してテキストに変換。</string>
+    <string name="ai_kanji_desc">手書きの筆順を認識して漢字を分析。</string>
     <string name="ocr_desc">画像からテキストを抽出。</string>
     <string name="kanji_draw">漢字の手書き認識</string>
     <string name="analysis">テキスト分析</string>
@@ -63,6 +68,9 @@
     <!-- Flashcards -->
     <string name="my_decks">マイデッキ</string>
     <string name="server_decks">サーバーから</string>
+    <string name="search_deck">デッキを検索...</string>
+    <string name="no_server_decks">サーバーにデッキがありません</string>
+    <string name="no_matching_decks">一致するデッキがありません</string>
     <string name="create_new_deck">新しいデッキを作成</string>
     <string name="deck_name">デッキ名</string>
     <string name="description">説明</string>
@@ -73,6 +81,15 @@
     <!-- Quiz -->
     <string name="exam_library">クイズライブラリ</string>
     <string name="my_exams">マイ試験</string>
+    <string name="create_exam">新しい試験を作成</string>
+    <string name="exam_title">試験タイトル</string>
+    <string name="exam_topic">トピック（例：N3文法）</string>
+    <string name="exam_level">レベル（N1-N5）</string>
+    <string name="add_question">問題を追加</string>
+    <string name="question_prompt">問題内容</string>
+    <string name="question_correct_answer">正解</string>
+    <string name="save_exam">試験を保存</string>
+    <string name="exam_created">試験を作成しました！</string>
     <string name="search_exam">試験を検索...</string>
     <string name="level_filter">レベル</string>
     <string name="topic_filter">トピック</string>
